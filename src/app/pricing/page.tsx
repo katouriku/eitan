@@ -9,10 +9,10 @@ import Link from "next/link";
 import "../globals.css";
 
 // Helper to safely get image URL
-function getImageUrl(image: any) {
+function getImageUrl(image: object) {
   try {
     if (!image) return null;
-    return urlFor(image).width(400).height(400).url();
+    return urlFor(image as object).width(400).height(400).url();
   } catch {
     return null;
   }
@@ -26,7 +26,6 @@ export default function PricingPage() {
     details: [],
     image: null,
   });
-  const [loading, setLoading] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
@@ -41,13 +40,13 @@ export default function PricingPage() {
         details: data?.details || [],
         image: data?.image || null,
       });
-      if (!data?.image) setLoading(false);
+      if (!data?.image) setImageLoaded(true);
     }
     fetchPricing();
   }, []);
 
   useEffect(() => {
-    if (!pricing.image || imageLoaded) setLoading(false);
+    if (!pricing.image || imageLoaded) setImageLoaded(true);
   }, [pricing.image, imageLoaded]);
 
   return (
@@ -67,7 +66,7 @@ export default function PricingPage() {
             />
           </div>
         )}
-        <div className="flex flex-col items-start justify-center max-w-2xl min-w-[340px] w-full order-2 md:order-none min-h-0 min-w-0">
+        <div className="flex flex-col items-start justify-center max-w-2xl min-w-[340px] w-full order-2 md:order-none min-h-0">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-[#3881ff] mb-4 text-left whitespace-nowrap" style={{textShadow:'0 2px 12px rgba(56,129,255,0.10)'}}>
             {pricing.title}
           </h1>

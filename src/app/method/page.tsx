@@ -10,7 +10,7 @@ import { PortableText } from "@portabletext/react";
 import "../globals.css";
 
 export default function MethodPage() {
-  const [method, setMethod] = useState<{ title: string; content: any; image?: { asset?: { url: string } } | null }>({
+  const [method, setMethod] = useState<{ title: string; content: unknown; image?: { asset?: { url: string } } | null }>({
     title: "",
     content: [],
     image: null,
@@ -32,7 +32,7 @@ export default function MethodPage() {
         {method.image && (
           <div className="flex-shrink-0 relative aspect-[413/531] w-64 md:w-80 rounded-2xl overflow-hidden order-1 md:order-none min-h-0 min-w-0">
             <Image
-              src={urlFor(method.image).width(413).height(531).url()}
+              src={typeof method.image === 'object' && method.image ? urlFor(method.image).width(413).height(531).url() : ''}
               alt="Method"
               fill
               className="object-cover w-full h-full rounded-2xl border-none"
@@ -44,7 +44,7 @@ export default function MethodPage() {
         <div className="flex flex-col items-start justify-center max-w-2xl min-w-[340px] w-full order-2 md:order-none min-h-0 min-w-0">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-[#3881ff] mb-4 text-left whitespace-nowrap" style={{textShadow:'0 2px 12px rgba(56,129,255,0.10)'}}>{method.title || "Method"}</h1>
           <div className="text-lg text-gray-100 text-left leading-relaxed mb-6">
-            <PortableText value={method.content || []} />
+            <PortableText value={Array.isArray(method.content) ? method.content : []} />
           </div>
           <p className="text-lg sm:text-xl text-gray-200 mb-6 text-left">
             My teaching method is friendly, modern, and focused on real conversation. Lessons are tailored to your goals, with an emphasis on confidence, fluency, and practical English for real life. Every lesson is interactive, supportive, and designed to help you speak naturally.

@@ -18,8 +18,8 @@ export async function POST(req: Request) {
       automatic_payment_methods: { enabled: true },
     });
     return NextResponse.json({ clientSecret: paymentIntent.client_secret });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Stripe error:", err);
-    return NextResponse.json({ error: err.message || "Failed to create PaymentIntent" }, { status: 500 });
+    return NextResponse.json({ error: (err instanceof Error ? err.message : "Failed to create PaymentIntent") }, { status: 500 });
   }
 }

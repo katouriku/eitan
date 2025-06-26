@@ -15,25 +15,18 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
     { label: "Pricing", href: "/pricing" },
     { label: "About Me", href: "/about-me" },
   ]);
-  const [navLoading, setNavLoading] = useState(false);
-  const [navError, setNavError] = useState(false);
-
   const pathname = usePathname();
   const isStudio = pathname.startsWith("/studio");
 
   // Fetch navigation from Sanity (memoized)
   const fetchNav = useCallback(async () => {
-    setNavLoading(true);
-    setNavError(false);
     try {
       const data = await client.fetch(
         groq`*[_type == "navigation"][0]{items[]{label, href}}`
       );
       if (data?.items) setNav(data.items);
     } catch {
-      setNavError(true);
-    } finally {
-      setNavLoading(false);
+      // Handle error
     }
   }, []);
 
