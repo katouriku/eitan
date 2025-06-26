@@ -69,7 +69,6 @@ export default function BookLessonPage() {
             }
           } catch {
             setFormError("An error occurred. Please try again.");
-            setStep(1);
           } finally {
             setFormLoading(false);
             setShowInfoRetrieved(false);
@@ -117,7 +116,7 @@ export default function BookLessonPage() {
     for (const range of avail.ranges) {
       const [startHour, startMin] = range.start.split(":").map(Number);
       const [endHour, endMin] = range.end.split(":").map(Number);
-      let current = new Date(d);
+      const current = new Date(d);
       current.setHours(startHour, startMin, 0, 0);
       const end = new Date(d);
       end.setHours(endHour, endMin, 0, 0);
@@ -140,8 +139,11 @@ export default function BookLessonPage() {
       return;
     }
     // Save to cookies
-    Cookies.set("booking_name", (e.currentTarget.name as any)?.value || "", { expires: 7 });
-    Cookies.set("booking_email", (e.currentTarget.email as any)?.value || "", { expires: 7 });
+    const form = e.currentTarget as HTMLFormElement;
+    const nameValue = (form.elements.namedItem("name") as HTMLInputElement)?.value || "";
+    const emailValue = (form.elements.namedItem("email") as HTMLInputElement)?.value || "";
+    Cookies.set("booking_name", nameValue, { expires: 7 });
+    Cookies.set("booking_email", emailValue, { expires: 7 });
     Cookies.set("booking_date", selectedDate, { expires: 7 });
     Cookies.set("booking_time", selectedTime, { expires: 7 });
     try {
@@ -157,7 +159,7 @@ export default function BookLessonPage() {
       } else {
         setFormError(data.error || "Failed to create payment session.");
       }
-    } catch (err) {
+    } catch {
       setFormError("An error occurred. Please try again.");
     } finally {
       setFormLoading(false);
@@ -241,7 +243,7 @@ export default function BookLessonPage() {
                   },
                 }}
               >
-                <PaymentElement options={{paymentMethodOrder: ['card', 'konbini', 'google_pay'], defaultValues: { paymentMethod: 'card' }}} />
+                <PaymentElement options={{ paymentMethodOrder: ['card', 'konbini', 'google_pay'] }} />
               </Elements>
               <div className="text-gray-400 text-center mt-4 text-sm">Complete payment to confirm your booking.</div>
             </div>
