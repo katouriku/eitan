@@ -1,7 +1,5 @@
 # Eitan App
 
-A clean Next.js project, ready for development.
-
 ## Getting Started
 
 Install dependencies:
@@ -17,5 +15,3 @@ npm run dev
 ```
 
 ---
-
-Replace this README with your own project documentation.
