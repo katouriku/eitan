@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { loadStripe } from "@stripe/stripe-js/pure";
 import { Elements } from "@stripe/react-stripe-js";
 import { PaymentElement } from "@stripe/react-stripe-js";
@@ -30,6 +30,7 @@ export default function BookLessonPage() {
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [step, setStep] = useState<1 | 2>(1);
   const [showInfoRetrieved, setShowInfoRetrieved] = useState(false);
+  const paymentFormRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function fetchAvailability() {
@@ -167,8 +168,8 @@ export default function BookLessonPage() {
   }
 
   return (
-    <main className="flex flex-col flex-1 min-h-0 min-w-0 w-full h-screen max-h-screen">
-      <section className="flex flex-1 flex-col md:flex-row items-center justify-center w-full min-h-0 min-w-0 max-h-full px-6 py-10 gap-12">
+    <main className="flex flex-col flex-1 min-h-0 min-w-0 w-full h-screen max-h-screen overflow-y-hidden">
+      <section className="flex flex-1 flex-col md:flex-row items-center justify-center w-full min-h-0 min-w-0 max-h-full px-6 py-0 gap-12 overflow-hidden">
         <div className="flex flex-col items-center justify-center max-w-2xl min-w-[340px] w-full order-2 md:order-none min-h-0">
           <span
             className="font-extrabold text-3xl sm:text-4xl md:text-5xl text-[#3881ff] mb-8 text-center w-full"
@@ -227,7 +228,12 @@ export default function BookLessonPage() {
             </form>
           )}
           {step === 2 && clientSecret && (
-            <div className="bg-[#18181b] p-8 rounded-2xl shadow-xl w-full border-2 border-[#3881ff] flex flex-col gap-6 max-w-lg mx-auto min-h-0 min-w-0">
+            <div
+              className="bg-[#18181b] p-8 rounded-2xl shadow-xl w-full flex flex-col gap-6 max-w-lg mx-auto min-h-0 min-w-0 max-h-[90vh] overflow-y-auto justify-center"
+              id="payment-form-container"
+              ref={paymentFormRef}
+              style={{ marginTop: 'auto', marginBottom: 'auto' }}
+            >
               <Elements
                 stripe={stripePromise}
                 options={{
@@ -243,9 +249,10 @@ export default function BookLessonPage() {
                   },
                 }}
               >
-                <PaymentElement options={{ paymentMethodOrder: ['card', 'konbini', 'google_pay'] }} />
+                <PaymentElement
+                  options={{ paymentMethodOrder: ['card', 'konbini', 'google_pay'] }}
+                />
               </Elements>
-              <div className="text-gray-400 text-center mt-4 text-sm">Complete payment to confirm your booking.</div>
             </div>
           )}
         </div>
