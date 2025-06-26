@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "英(エイ)探(タン)検隊",
+  title: "エイタン",
   description:
     "User-friendly, modern English tutoring with a focus on conversation, confidence, and real-world skills. Book lessons, view pricing, and learn about our unique method. Taught by a native English speaker. Online and flexible scheduling.",
 };

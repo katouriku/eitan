@@ -47,13 +47,9 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
       <main className="relative min-h-screen h-screen w-screen flex items-center justify-center overflow-hidden">
         {/* Centered Site Name with background - move to top on mobile */}
         <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center justify-center w-full px-2 xs:px-0 sm:left-1/2 sm:top-1/2 xs:left-1/2 xs:top-6 xs:-translate-x-1/2 xs:-translate-y-0">
-          <div className="rounded-2xl bg-[#18181b]/80 px-4 py-4 xs:px-10 xs:py-6 shadow-2xl border border-cyan-400/10 backdrop-blur-xl w-full max-w-xs xs:max-w-lg md:max-w-2xl">
-            <h1 className="transition-opacity duration-500 opacity-100 text-3xl xs:text-4xl sm:text-5xl md:text-7xl font-extrabold tracking-tight text-center text-white select-none m-0 flex flex-wrap items-center justify-center gap-x-2">
-              <span className="bg-gradient-to-br from-blue-300 via-cyan-400 to-teal-400 bg-clip-text text-transparent" style={{textShadow:'0 2px 8px rgba(0,180,216,0.10)'}}>英</span>
-              <span className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl align-super font-bold ml-1 mr-2 text-cyan-300" style={{lineHeight:1}}>(エイ)</span>
-              <span className="bg-gradient-to-br from-blue-300 via-cyan-400 to-teal-400 bg-clip-text text-transparent" style={{textShadow:'0 2px 8px rgba(0,180,216,0.10)'}}>探</span>
-              <span className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl align-super font-bold ml-1 mr-2 text-teal-300" style={{lineHeight:1}}>(タン)</span>
-              <span className="bg-gradient-to-br from-blue-300 via-cyan-400 to-teal-400 bg-clip-text text-transparent" style={{textShadow:'0 2px 8px rgba(0,180,216,0.10)'}}>検隊</span>
+          <div className="rounded-2xl bg-[#18181b]/80 p-3 xs:p-4 sm:p-6 shadow-2xl border border-cyan-400/10 backdrop-blur-xl w-auto max-w-full flex items-center justify-center">
+            <h1 className="transition-opacity duration-500 opacity-100 text-4xl xs:text-5xl sm:text-6xl md:text-8xl font-extrabold tracking-tight text-center select-none m-0 flex flex-wrap items-center justify-center gap-x-2">
+              <span className="bg-gradient-to-br from-white via-cyan-200 to-blue-300 bg-clip-text text-transparent" style={{textShadow:'0 2px 12px rgba(180,240,255,0.18)'}}>エイタン</span>
             </h1>
           </div>
         </div>
