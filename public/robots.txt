@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Disallow crawling of Next.js API routes
+Disallow: /api/
+
+# Sitemap (add your sitemap URL if available)
+# Sitemap: https://yourdomain.com/sitemap.xml
