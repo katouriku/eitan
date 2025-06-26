@@ -1,4 +1,5 @@
 import { type SchemaTypeDefinition } from 'sanity'
+import homepage from './homepage'
 
 const navigation: SchemaTypeDefinition = {
   name: 'navigation',
@@ -117,5 +118,5 @@ const method: SchemaTypeDefinition = {
 }
 
 export const schema: { types: SchemaTypeDefinition[] } = {
-  types: [navigation, about, pricing, availability, method],
+  types: [navigation, about, pricing, availability, method, homepage],
 }

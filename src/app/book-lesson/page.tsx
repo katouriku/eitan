@@ -6,6 +6,8 @@ import { Elements } from "@stripe/react-stripe-js";
 import { PaymentElement } from "@stripe/react-stripe-js";
 import { client } from "@/sanity/lib/client";
 import { groq } from "next-sanity";
+import Link from "next/link";
+import "../globals.css";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -115,53 +117,66 @@ export default function BookLessonPage() {
   }
 
   return (
-    <main className="backdrop-blur-lg bg-[#18181b]/90 rounded-2xl shadow-2xl flex flex-col items-center justify-center min-h-[60vh] py-12 px-4 max-w-2xl mx-auto mt-12 data-[theme=light]:text-gray-900">
-      <h1 className="text-3xl font-extrabold text-gray-100 data-[theme=light]:text-gray-900 mb-8 drop-shadow-lg">Book a Lesson</h1>
-      <form className="bg-[#18181b] data-[theme=light]:bg-white p-8 rounded-2xl shadow-2xl w-full border-2 border-[#6366f1] data-[theme=light]:border-[#6366f1]/30 flex flex-col gap-6 max-w-lg mx-auto" onSubmit={handleSubmit}>
-        <input name="name" required placeholder="Name" className="p-3 rounded-lg border border-[#31313a] data-[theme=light]:border-[#e0e7eb] bg-[#23232a] data-[theme=light]:bg-[#f7f7fa] text-gray-100 data-[theme=light]:text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366f1]" />
-        <input name="email" required type="email" placeholder="Email" className="p-3 rounded-lg border border-[#31313a] data-[theme=light]:border-[#e0e7eb] bg-[#23232a] data-[theme=light]:bg-[#f7f7fa] text-gray-100 data-[theme=light]:text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#6366f1]" />
-        <div>
-          <label className="block text-gray-200 data-[theme=light]:text-gray-700 mb-2">Select Date</label>
-          <select
-            value={selectedDate}
-            onChange={(e) => {
-              setSelectedDate(e.target.value);
-              setSelectedTime("");
-            }}
-            required
-            className="w-full p-3 rounded-lg border border-[#31313a] data-[theme=light]:border-[#e0e7eb] bg-[#23232a] data-[theme=light]:bg-[#f7f7fa] text-gray-100 data-[theme=light]:text-gray-900 mb-2"
-          >
-            <option value="">-- Select a date --</option>
-            {getAvailableDates().map((date) => (
-              <option key={date} value={date}>{date}</option>
-            ))}
-          </select>
+    <main className="flex flex-col flex-1 min-h-0 min-w-0 w-full h-screen max-h-screen">
+      <section className="flex flex-1 flex-col md:flex-row items-center justify-center w-full min-h-0 min-w-0 max-h-full px-6 py-10 gap-12">
+        <div className="flex flex-col items-start justify-center max-w-2xl min-w-[340px] w-full order-2 md:order-none min-h-0 min-w-0">
+          <Link href="/" aria-label="Go to homepage">
+            <span
+              className="cursor-pointer px-6 py-3 rounded-full font-extrabold text-3xl sm:text-4xl md:text-5xl text-[#3881ff] bg-transparent border-2 border-[#3881ff] shadow-none hover:bg-[#3881ff] hover:text-white transition-colors mb-4 text-left focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 focus:ring-offset-[#18181b] whitespace-nowrap"
+              style={{textShadow:'0 2px 12px rgba(56,129,255,0.10)'}}
+              tabIndex={0}
+              role="button"
+            >
+              Book a Lesson
+            </span>
+          </Link>
+          <form className="bg-[#18181b] p-8 rounded-2xl shadow-xl w-full border-2 border-[#3881ff] flex flex-col gap-6 max-w-lg mx-auto min-h-0 min-w-0" onSubmit={handleSubmit}>
+            <input name="name" required placeholder="Name" className="p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#3881ff]" />
+            <input name="email" required type="email" placeholder="Email" className="p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#3881ff]" />
+            <div>
+              <label className="block text-gray-200 mb-2">Select Date</label>
+              <select
+                value={selectedDate}
+                onChange={(e) => {
+                  setSelectedDate(e.target.value);
+                  setSelectedTime("");
+                }}
+                required
+                className="w-full p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 mb-2 focus:outline-none focus:ring-2 focus:ring-[#3881ff]"
+              >
+                <option value="">-- Select a date --</option>
+                {getAvailableDates().map((date) => (
+                  <option key={date} value={date}>{date}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-gray-200 mb-2">Select Time</label>
+              <select
+                value={selectedTime}
+                onChange={(e) => setSelectedTime(e.target.value)}
+                required
+                className="w-full p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#3881ff]"
+                disabled={!selectedDate}
+              >
+                <option value="">-- Select a time --</option>
+                {getTimesForDate(selectedDate).map((time) => (
+                  <option key={time} value={time}>{time}</option>
+                ))}
+              </select>
+            </div>
+            {formError && <div className="text-red-400 font-bold">{formError}</div>}
+            {clientSecret && (
+              <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'night', variables: { colorPrimary: '#3881ff', colorBackground: '#18181b', colorText: '#fff', borderRadius: '12px' } } }}>
+                <PaymentElement />
+              </Elements>
+            )}
+            <button type="submit" className="mt-4 px-8 py-3 rounded-xl bg-[#3881ff] text-white font-extrabold text-lg shadow-lg hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-[#3881ff]/50" disabled={formLoading || !!clientSecret}>
+              {formLoading ? "Loading..." : clientSecret ? "Payment Ready" : "Book & Pay"}
+            </button>
+          </form>
         </div>
-        <div>
-          <label className="block text-gray-200 data-[theme=light]:text-gray-700 mb-2">Select Time</label>
-          <select
-            value={selectedTime}
-            onChange={(e) => setSelectedTime(e.target.value)}
-            required
-            className="w-full p-3 rounded-lg border border-[#31313a] data-[theme=light]:border-[#e0e7eb] bg-[#23232a] data-[theme=light]:bg-[#f7f7fa] text-gray-100 data-[theme=light]:text-gray-900"
-            disabled={!selectedDate}
-          >
-            <option value="">-- Select a time --</option>
-            {getTimesForDate(selectedDate).map((time) => (
-              <option key={time} value={time}>{time}</option>
-            ))}
-          </select>
-        </div>
-        {formError && <div className="text-red-400 font-bold">{formError}</div>}
-        {clientSecret && (
-          <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'night', variables: { colorPrimary: '#6366f1', colorBackground: '#18181b', colorText: '#fff', borderRadius: '12px' } } }}>
-            <PaymentElement />
-          </Elements>
-        )}
-        <button type="submit" className="mt-4 px-8 py-3 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#818cf8] text-white data-[theme=light]:text-white font-extrabold text-lg shadow-lg hover:scale-105 hover:from-[#818cf8] hover:to-[#6366f1] transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-[#6366f1]/50" disabled={formLoading || !!clientSecret}>
-          {formLoading ? "Loading..." : clientSecret ? "Payment Ready" : "Book & Pay"}
-        </button>
-      </form>
+      </section>
     </main>
   );
 }

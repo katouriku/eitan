@@ -6,6 +6,7 @@ import { groq } from "next-sanity";
 import Image from "next/image";
 import { urlFor } from "@/sanity/lib/image";
 import Link from "next/link";
+import "../globals.css";
 
 // Helper to safely get image URL
 function getImageUrl(image: any) {
@@ -19,15 +20,10 @@ function getImageUrl(image: any) {
 
 export default function PricingPage() {
   const [pricing, setPricing] = useState({
-    title: "Hourly Session",
-    price: "¥4,000",
-    unit: "per 1 hour session",
-    details: [
-      "Personalized lesson plan",
-      "Flexible scheduling",
-      "Online or in-person options",
-      "All materials provided",
-    ],
+    title: "",
+    price: "",
+    unit: "",
+    details: [],
     image: null,
   });
   const [loading, setLoading] = useState(true);
@@ -39,15 +35,10 @@ export default function PricingPage() {
         groq`*[_type == "pricing"][0]{title, price, unit, details, image}`
       );
       setPricing({
-        title: data?.title || "Hourly Session",
-        price: data?.price || "¥4,000",
-        unit: data?.unit || "per 1 hour session",
-        details: data?.details || [
-          "Personalized lesson plan",
-          "Flexible scheduling",
-          "Online or in-person options",
-          "All materials provided",
-        ],
+        title: data?.title || "",
+        price: data?.price || "",
+        unit: data?.unit || "",
+        details: data?.details || [],
         image: data?.image || null,
       });
       if (!data?.image) setLoading(false);
@@ -60,53 +51,47 @@ export default function PricingPage() {
   }, [pricing.image, imageLoaded]);
 
   return (
-    <main className="backdrop-blur-lg bg-[#18181b]/90 rounded-2xl shadow-2xl flex flex-col items-center justify-center min-h-[60vh] py-12 px-4 max-w-3xl mx-auto mt-12 data-[theme=light]:text-gray-900">
-      <h1 className="text-3xl font-extrabold text-gray-100 data-[theme=light]:text-gray-900 mb-8 drop-shadow-lg">
-        Pricing
-      </h1>
-      {(loading) ? (
-        <div className="w-full flex items-center justify-center min-h-[300px]">
-          <div className="animate-pulse w-full h-56 bg-[#23232a] data-[theme=light]:bg-[#e0e7ff] rounded-2xl" />
-        </div>
-      ) : (
-        <div className="relative w-full flex flex-col items-center">
-          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#23232a] via-[#18181b] to-[#23232a] data-[theme=light]:from-[#e0e7ff] data-[theme=light]:via-[#f7f7fa] data-[theme=light]:to-[#e5e7eb] blur-sm z-0" />
-          <div className="relative bg-[#18181b] data-[theme=light]:bg-white p-8 rounded-2xl shadow-2xl w-full border-2 border-[#6366f1] data-[theme=light]:border-[#6366f1]/30 z-10 flex flex-col md:flex-row items-center gap-8">
-            {getImageUrl(pricing.image) && (
-              <Image
-                src={getImageUrl(pricing.image)!}
-                alt="Pricing visual"
-                width={224}
-                height={224}
-                className="object-cover w-56 h-56 md:w-56 md:h-56 rounded-xl"
-                onLoad={() => setImageLoaded(true)}
-                onLoadingComplete={() => setImageLoaded(true)}
-                priority
-              />
-            )}
-            <div className="flex-1 w-full flex flex-col items-center md:items-start">
-              <h2 className="text-xl font-bold text-gray-100 data-[theme=light]:text-gray-900 mb-4">
-                {pricing.title}
-              </h2>
-              <p className="text-4xl font-extrabold text-white data-[theme=light]:text-[#6366f1] mb-2 drop-shadow">
-                {pricing.price}
-              </p>
-              <p className="text-gray-200 data-[theme=light]:text-gray-700">{pricing.unit}</p>
-              <ul className="mt-6 text-gray-100 data-[theme=light]:text-gray-900 text-left list-disc list-inside space-y-2">
-                {pricing.details.map((item: string, i: number) => (
-                  <li key={i}>{item}</li>
-                ))}
-              </ul>
-              <Link
-                href="/book-lesson"
-                className="mt-8 inline-block px-8 py-3 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#818cf8] text-white data-[theme=light]:text-white font-extrabold text-lg shadow-lg hover:scale-105 hover:from-[#818cf8] hover:to-[#6366f1] transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-[#6366f1]/50 animate-bounce"
-              >
-                Book Now
-              </Link>
-            </div>
+    <main className="flex flex-col flex-1 min-h-0 min-w-0 w-full h-screen max-h-screen">
+      <section className="flex flex-1 flex-col md:flex-row items-center justify-center w-full min-h-0 min-w-0 max-h-full px-6 py-10 gap-12">
+        {/* Image to the left on desktop, above on mobile */}
+        {pricing.image && getImageUrl(pricing.image) && (
+          <div className="flex-shrink-0 relative aspect-square w-64 md:w-80 rounded-2xl overflow-hidden order-1 md:order-none min-h-0 min-w-0">
+            <Image
+              src={getImageUrl(pricing.image) as string}
+              alt="Pricing"
+              fill
+              className="object-cover w-full h-full rounded-2xl border-none"
+              priority
+              onLoad={() => setImageLoaded(true)}
+              sizes="(max-width: 768px) 100vw, 320px"
+            />
           </div>
+        )}
+        <div className="flex flex-col items-start justify-center max-w-2xl min-w-[340px] w-full order-2 md:order-none min-h-0 min-w-0">
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-[#3881ff] mb-4 text-left whitespace-nowrap" style={{textShadow:'0 2px 12px rgba(56,129,255,0.10)'}}>
+            {pricing.title}
+          </h1>
+          <ul className="text-lg sm:text-xl text-gray-200 mb-6 text-left list-disc pl-6">
+            {pricing.details && pricing.details.length > 0 &&
+              pricing.details.map((detail, idx) => (
+                <li className="mb-2" key={idx}>{detail}</li>
+              ))}
+          </ul>
+          {(pricing.price || pricing.unit) && (
+            <div className="flex flex-row items-center gap-2 text-xl text-gray-200 mb-4 whitespace-nowrap">
+              {pricing.price && <span className="font-bold text-[#3881ff] whitespace-nowrap">{pricing.price}</span>}
+              {pricing.unit && <span className="ml-2 text-base text-gray-400 whitespace-nowrap">{pricing.unit}</span>}
+            </div>
+          )}
+          <Link
+            href="/book-lesson"
+            className="px-8 py-3 rounded-full font-bold text-lg uppercase tracking-wide bg-[#3881ff] text-white shadow-md border border-[#3881ff] hover:scale-105 hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 focus:ring-offset-[#18181b]"
+            style={{textShadow:'0 1px 6px rgba(56,129,255,0.10)'}}
+          >
+            Book a Lesson
+          </Link>
         </div>
-      )}
+      </section>
     </main>
   );
 }

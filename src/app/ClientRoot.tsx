@@ -41,100 +41,80 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
     fetchNav();
   }, [fetchNav]);
 
+  // Homepage content state
+  const [homepage, setHomepage] = useState({
+    mainTitle: "エイタン",
+    subtitle: "Start your English journey today!",
+    description:
+      "Friendly, modern English lessons focused on conversation, confidence, and real-world skills. Book a lesson or explore more below.",
+  });
+
+  // Fetch homepage content from Sanity
+  useEffect(() => {
+    async function fetchHomepage() {
+      try {
+        const data = await client.fetch(
+          groq`*[_type == "homepage"][0]{mainTitle, subtitle, description}`
+        );
+        if (data) setHomepage(data);
+      } catch {}
+    }
+    fetchHomepage();
+  }, []);
+
   // Home page UI
-  if (!isStudio && pathname === "/") {
+  // Use the same header for all pages except /studio
+  if (!isStudio) {
+    // Flat dark gray background for the entire site, including header
     return (
-      <main className="relative min-h-screen h-screen w-screen flex items-center justify-center overflow-hidden">
-        {/* Centered Site Name with background - move to top on mobile */}
-        <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center justify-center w-full px-2 xs:px-0 sm:left-1/2 sm:top-1/2 xs:left-1/2 xs:top-6 xs:-translate-x-1/2 xs:-translate-y-0">
-          <div className="rounded-2xl bg-[#18181b]/80 p-3 xs:p-4 sm:p-6 shadow-2xl border border-cyan-400/10 backdrop-blur-xl w-auto max-w-full flex items-center justify-center">
-            <h1 className="transition-opacity duration-500 opacity-100 text-4xl xs:text-5xl sm:text-6xl md:text-8xl font-extrabold tracking-tight text-center select-none m-0 flex flex-wrap items-center justify-center gap-x-2">
-              <span className="bg-gradient-to-br from-white via-cyan-200 to-blue-300 bg-clip-text text-transparent" style={{textShadow:'0 2px 12px rgba(180,240,255,0.18)'}}>エイタン</span>
+      <div className="min-h-screen w-full flex flex-col bg-[#18181b]">
+        <header className="w-full flex items-center justify-between px-6 py-6 md:py-8 bg-[#18181b] fixed top-0 left-0 right-0 z-40">
+          <div className="flex items-center gap-4">
+            <h1 className="text-4xl xs:text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-center select-none m-0 mb-2 flex flex-wrap items-center justify-center gap-x-2">
+              <Link href="/"><span className="text-[#3881ff]" style={{textShadow:'0 2px 12px rgba(56,129,255,0.10)'}}>{homepage.mainTitle}</span></Link>
             </h1>
           </div>
-        </div>
-        {/* 4 Absolutely Positioned Buttons - Responsive for mobile */}
-        {nav.slice(0, 4).map((item, i) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            aria-label={item.label}
-            className={
-              [
-                i === 0 && "absolute top-0 left-0 w-1/2 h-1/2 sm:w-1/2 sm:h-1/2 xs:static xs:w-full xs:h-1/4",
-                i === 1 && "absolute top-0 right-0 w-1/2 h-1/2 sm:w-1/2 sm:h-1/2 xs:static xs:w-full xs:h-1/4 xs:mt-0 xs:top-auto xs:left-auto",
-                i === 2 && "absolute bottom-0 left-0 w-1/2 h-1/2 sm:w-1/2 sm:h-1/2 xs:static xs:w-full xs:h-1/4 xs:mt-0 xs:top-auto xs:left-auto",
-                i === 3 && "absolute bottom-0 right-0 w-1/2 h-1/2 sm:w-1/2 sm:h-1/2 xs:static xs:w-full xs:h-1/4 xs:mt-0 xs:top-auto xs:left-auto",
-                "text-2xl md:text-3xl font-bold rounded-none shadow-xl transition-all duration-200 flex items-center justify-center z-10 cursor-pointer",
-                // Uniform, soft blue-cyan-teal gradients for all quadrants
-                i === 0 && "bg-gradient-to-br from-blue-700 via-cyan-600 to-teal-500 text-white ring-1 ring-cyan-300/20 hover:ring-4 hover:ring-cyan-200/40 hover:bg-cyan-800/40 hover:backdrop-blur-md hover:text-cyan-100",
-                i === 1 && "bg-gradient-to-bl from-cyan-600 via-blue-500 to-teal-400 text-white ring-1 ring-blue-300/20 hover:ring-4 hover:ring-blue-200/40 hover:bg-blue-700/40 hover:backdrop-blur-md hover:text-cyan-100",
-                i === 2 && "bg-gradient-to-tr from-teal-600 via-cyan-500 to-blue-400 text-white ring-1 ring-teal-300/20 hover:ring-4 hover:ring-teal-200/40 hover:bg-teal-700/40 hover:backdrop-blur-md hover:text-cyan-100",
-                i === 3 && "bg-gradient-to-tl from-cyan-500 via-teal-400 to-blue-300 text-white ring-1 ring-cyan-200/20 hover:ring-4 hover:ring-cyan-100/40 hover:bg-cyan-600/40 hover:backdrop-blur-md hover:text-cyan-100",
-              ]
-                .filter(Boolean)
-                .join(" ")
-            }
-          >
-            <span className="drop-shadow-lg tracking-tight flex items-center gap-2 text-base xs:text-lg sm:text-2xl md:text-3xl">
-              {item.label}
-            </span>
-          </Link>
-        ))}
-        {/* Loading/Error States for nav fetch */}
-        {navLoading && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-cyan-200 text-sm bg-[#23232a]/80 px-4 py-2 rounded shadow-lg">
-            Loading navigation…
-          </div>
-        )}
-        {navError && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-red-300 text-sm bg-[#23232a]/80 px-4 py-2 rounded shadow-lg">
-            Navigation failed to load. Using defaults.
-          </div>
-        )}
-      </main>
-    );
-  }
-
-  // Header for all other pages (not /studio)
-  if (!isStudio) {
-    return (
-      <>
-        <header className="w-full flex items-center justify-center px-8 py-6 border-b border-[#23232a]/40 bg-[#23232a]/60 backdrop-blur-md sticky top-0 z-50 shadow-md">
-          <nav className="flex gap-8 items-center w-full max-w-4xl justify-between">
-            <ul className="flex gap-6 list-none m-0 p-0">
-              {nav.slice(0, 2).map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    aria-label={item.label}
-                    className="no-underline text-gray-100 font-semibold transition-colors hover:text-white px-4 py-2 rounded-lg bg-[#23232a] shadow-lg hover:bg-[#31313a] focus:outline-none focus:ring-2 focus:ring-[#6366f1] focus:ring-offset-2 focus:ring-offset-[#18181b] cursor-pointer"
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            <Link
-              href="/"
-              aria-label="Go to home page"
-              className="font-extrabold text-2xl tracking-wide text-gray-100 px-4 py-1 shadow-none bg-transparent no-underline focus:outline-none focus:ring-2 focus:ring-[#6366f1] focus:ring-offset-2 focus:ring-offset-[#18181b] cursor-pointer"
-            >
-              エイ
-            </Link>
-            <div className="hidden xs:block">
+          <nav className="flex gap-4 md:gap-6 items-center">
+            {nav.slice(1).map((item) => (
               <Link
-                href="/book-lesson"
-                aria-label="Book Lesson"
-                className="no-underline text-gray-100 font-semibold transition-colors hover:text-white px-4 py-2 rounded-lg bg-[#23232a] shadow-lg hover:bg-[#31313a] focus:outline-none focus:ring-2 focus:ring-[#6366f1] focus:ring-offset-2 focus:ring-offset-[#18181b] cursor-pointer"
+                key={item.href}
+                href={item.href}
+                aria-label={item.label}
+                className="px-6 py-2 rounded-full font-bold text-base md:text-lg uppercase tracking-wide bg-[#3881ff] text-white shadow-md border border-[#3881ff] hover:scale-105 hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 focus:ring-offset-[#18181b]"
+                style={{textShadow:'0 1px 6px rgba(56,129,255,0.10)'}}
               >
-                Book Lesson
+                {item.label}
               </Link>
-            </div>
+            ))}
           </nav>
         </header>
-        {children}
-      </>
+        <main className="flex-1 w-full flex flex-col pt-[88px]">
+          {pathname === "/" ? (
+            <section className="flex flex-1 flex-col items-center justify-center w-full min-h-[calc(100vh-88px)]">
+              <div className="max-w-xl w-full flex flex-col items-center justify-center mt-2">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#3881ff] mb-4 text-center">{homepage.subtitle}</h2>
+                <p className="text-lg sm:text-xl text-gray-200 mb-8 text-center">
+                  {homepage.description}
+                </p>
+                <Link
+                  href={nav[0].href}
+                  aria-label={nav[0].label}
+                  className="w-full sm:w-auto px-10 py-5 rounded-full font-extrabold text-2xl uppercase tracking-wide bg-[#3881ff] text-white shadow-xl border border-[#3881ff] hover:scale-105 hover:shadow-2xl transition-all text-center mb-6 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 focus:ring-offset-[#18181b]"
+                  style={{textShadow:'0 2px 12px rgba(56,129,255,0.13)'}}
+                >
+                  {nav[0].label}
+                </Link>
+              </div>
+            </section>
+          ) : (
+            <section className="flex flex-1 flex-col items-center justify-center w-full min-h-[calc(100vh-88px)] px-4 py-8">
+              <div className="max-w-2xl w-full flex flex-col items-center justify-center mt-2">
+                {children}
+              </div>
+            </section>
+          )}
+        </main>
+      </div>
     );
   }
 
