@@ -29,7 +29,6 @@ export default function BookLessonPage() {
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [showInfoRetrieved, setShowInfoRetrieved] = useState(false);
   const paymentFormRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -46,38 +45,18 @@ export default function BookLessonPage() {
     const savedEmail = Cookies.get("booking_email") || "";
     const savedDate = Cookies.get("booking_date") || "";
     const savedTime = Cookies.get("booking_time") || "";
-    if (savedName && savedEmail && savedDate && savedTime) {
-      setSelectedDate(savedDate);
-      setSelectedTime(savedTime);
-      setShowInfoRetrieved(true);
-      setTimeout(() => {
-        // Immediately create payment intent and go to payment step
-        (async () => {
-          setFormLoading(true);
-          try {
-            const res = await fetch("/api/create-payment-intent", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ amount: 4000, currency: "jpy" }),
-            });
-            const data = await res.json();
-            if (data.clientSecret) {
-              setClientSecret(data.clientSecret);
-              setStep(2);
-            } else {
-              setFormError(data.error || "Failed to create payment session.");
-              setStep(1);
-            }
-          } catch {
-            setFormError("An error occurred. Please try again.");
-          } finally {
-            setFormLoading(false);
-            setShowInfoRetrieved(false);
-          }
-        })();
-      }, 1200); // Show checkmark for 1.2s
-    }
+    // Prefill fields but do not auto-advance
+    if (savedName) setSelectedDate(savedDate);
+    if (savedEmail) setSelectedTime(savedTime);
   }, []);
+
+  // Clear date and time cookies after booking confirmation
+  useEffect(() => {
+    if (step === 3) {
+      Cookies.remove("booking_date");
+      Cookies.remove("booking_time");
+    }
+  }, [step]);
 
   // Helper: Map day string to JS weekday index
   const dayToIndex: Record<string, number> = {
@@ -169,28 +148,112 @@ export default function BookLessonPage() {
 
   // Progress bar component
   function ProgressBar({ step }: { step: 1 | 2 | 3 }) {
-    const percent = step === 1 ? 33 : step === 2 ? 66 : 100;
-    const labels = ["Info", "Payment", "Done"];
+    // Fill only up to the current step: 0% (step 1), 50% (step 2), 100% (step 3)
+    const percent = step === 1 ? 0 : step === 2 ? 50 : 100;
+    // Helper to allow going back to previous steps
+    const setStepIfAllowed = (target: 1 | 2 | 3) => {
+      if (target < step) setStep(target);
+    };
     return (
       <div className="w-full max-w-lg mx-auto mb-8 flex flex-col items-center">
-        <div className="w-full h-2 bg-[#23232a] rounded-full overflow-hidden">
+        <div className="relative w-full h-8 bg-[#23232a] rounded-full overflow-visible flex items-center">
           <div
-            className="h-2 bg-[#3881ff] transition-all duration-300"
-            style={{ width: `${percent}%` }}
+            className="absolute left-0 top-1/2 h-2 bg-[#3881ff] transition-all duration-300 rounded-full"
+            style={{ width: `${percent}%`, transform: 'translateY(-50%)', zIndex: 1 }}
           />
+          <div className="relative w-full flex justify-between items-center z-10">
+            {[1, 2, 3].map((n, i) => {
+              const isClickable = step > n;
+              return (
+                <div key={n} className={i === 1 ? "flex flex-col items-center w-1/3 justify-center" : "flex flex-col items-center w-0"} style={i === 0 ? {alignItems: 'flex-start'} : i === 2 ? {alignItems: 'flex-end'} : {}}>
+                  {isClickable ? (
+                    <button
+                      type="button"
+                      aria-label={`Go to step ${n}`}
+                      tabIndex={0}
+                      onClick={() => setStepIfAllowed(n as 1 | 2 | 3)}
+                      className={
+                        `w-9 h-9 flex items-center justify-center rounded-full border-2 text-base font-bold transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#3881ff] ` +
+                        'bg-[#3881ff] border-[#3881ff] text-white hover:scale-105'
+                      }
+                      style={{ zIndex: 2 }}
+                    >
+                      {n}
+                    </button>
+                  ) : (
+                    <div
+                      className={
+                        `w-9 h-9 flex items-center justify-center rounded-full border-2 text-base font-bold transition-all duration-200 ` +
+                        (step > i ? 'bg-[#3881ff] border-[#3881ff] text-white' : step === i + 1 ? 'bg-[#23232a] border-[#3881ff] text-[#3881ff]' : 'bg-[#23232a] border-[#31313a] text-[#31313a]')
+                      }
+                      style={{ zIndex: 2 }}
+                    >
+                      {n}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
-        <div className="flex w-full justify-between mt-2 text-xs text-gray-400 font-bold">
-          {labels.map((label, i) => (
-            <span
-              key={label}
-              className={
-                (step > i ? 'text-[#3881ff]' : '') +
-                (step === i + 1 ? ' text-white' : '')
-              }
+        {/* Absolute-positioned labels for perfect centering */}
+        <div className="relative w-full mt-3 h-6">
+          {/* Info label */}
+          {step > 1 ? (
+            <button
+              type="button"
+              aria-label="Go to Info step"
+              tabIndex={0}
+              onClick={() => setStepIfAllowed(1)}
+              className="absolute left-0 text-[#3881ff] hover:underline font-bold cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#3881ff]"
+              style={{ minWidth: 60, textAlign: 'center', transform: 'translateX(-50%)', left: 'calc(0% + 18px)' }}
             >
-              {label}
+              Info
+            </button>
+          ) : (
+            <span
+              className={
+                (step === 1 ? ' text-white' : '') +
+                ' absolute left-0'
+              }
+              style={{ minWidth: 60, textAlign: 'center', transform: 'translateX(-50%)', left: 'calc(0% + 18px)' }}
+            >
+              Info
             </span>
-          ))}
+          )}
+          {/* Payment label */}
+          {step > 2 ? (
+            <button
+              type="button"
+              aria-label="Go to Payment step"
+              tabIndex={0}
+              onClick={() => setStepIfAllowed(2)}
+              className="absolute left-1/2 text-[#3881ff] hover:underline font-bold cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#3881ff]"
+              style={{ minWidth: 60, textAlign: 'center', transform: 'translateX(-50%)' }}
+            >
+              Payment
+            </button>
+          ) : (
+            <span
+              className={
+                (step === 2 ? ' text-white' : '') +
+                ' absolute left-1/2'
+              }
+              style={{ minWidth: 60, textAlign: 'center', transform: 'translateX(-50%)' }}
+            >
+              Payment
+            </span>
+          )}
+          {/* Done label (never clickable) */}
+          <span
+            className={
+              (step === 3 ? ' text-white' : '') +
+              ' absolute right-0'
+            }
+            style={{ minWidth: 60, textAlign: 'center', transform: 'translateX(50%)', right: 'calc(0% + 18px)' }}
+          >
+            Done
+          </span>
         </div>
       </div>
     );
@@ -206,14 +269,6 @@ export default function BookLessonPage() {
           >
             Book a Lesson
           </span>
-          {showInfoRetrieved && (
-            <div className="flex flex-col items-center justify-center mb-8 animate-fade-in">
-              <svg className="w-12 h-12 text-green-400 mb-2" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-              <div className="text-green-400 font-bold text-lg">Your information was retrieved!</div>
-            </div>
-          )}
           <ProgressBar step={step} />
           {step === 1 && (
             <form className="bg-[#18181b] p-8 rounded-2xl shadow-xl w-full border-2 border-[#3881ff] flex flex-col gap-6 max-w-lg mx-auto min-h-0 min-w-0" onSubmit={async (e) => {
@@ -283,8 +338,10 @@ export default function BookLessonPage() {
                 }}
               >
                 <PaymentElement
-                  options={{ paymentMethodOrder: ['card', 'konbini', 'google_pay'] }}
-                  // Add onPaymentComplete or similar logic here if needed
+                  options={{ 
+                    paymentMethodOrder: ['card', 'konbini', 'google_pay'],
+                    layout: 'tabs' // Force tabs layout, which disables Link
+                  }}
                 />
               </Elements>
               <button
