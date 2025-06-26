@@ -68,7 +68,7 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
     // Flat dark gray background for the entire site, including header
     return (
       <div className="min-h-screen w-full flex flex-col bg-[#18181b]">
-        <header className="w-full flex items-center justify-between px-6 py-6 md:py-8 bg-[#18181b] fixed top-0 left-0 right-0 z-40">
+        <header className="w-full flex items-center justify-between px-6 py-6 md:py-8 bg-transparent fixed top-0 left-0 right-0 z-40">
           <div className="flex items-center gap-4">
             <h1 className="text-4xl xs:text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-center select-none m-0 mb-2 flex flex-wrap items-center justify-center gap-x-2">
               <Link href="/"><span className="text-[#3881ff]" style={{textShadow:'0 2px 12px rgba(56,129,255,0.10)'}}>{homepage.mainTitle}</span></Link>
