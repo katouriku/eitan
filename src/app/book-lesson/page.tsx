@@ -28,7 +28,7 @@ export default function BookLessonPage() {
   const [weeklyAvailability, setWeeklyAvailability] = useState<WeeklyAvailability[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState<string>("");
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [showInfoRetrieved, setShowInfoRetrieved] = useState(false);
   const paymentFormRef = useRef<HTMLDivElement>(null);
 
@@ -167,6 +167,35 @@ export default function BookLessonPage() {
     }
   }
 
+  // Progress bar component
+  function ProgressBar({ step }: { step: 1 | 2 | 3 }) {
+    const percent = step === 1 ? 33 : step === 2 ? 66 : 100;
+    const labels = ["Info", "Payment", "Done"];
+    return (
+      <div className="w-full max-w-lg mx-auto mb-8 flex flex-col items-center">
+        <div className="w-full h-2 bg-[#23232a] rounded-full overflow-hidden">
+          <div
+            className="h-2 bg-[#3881ff] transition-all duration-300"
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+        <div className="flex w-full justify-between mt-2 text-xs text-gray-400 font-bold">
+          {labels.map((label, i) => (
+            <span
+              key={label}
+              className={
+                (step > i ? 'text-[#3881ff]' : '') +
+                (step === i + 1 ? ' text-white' : '')
+              }
+            >
+              {label}
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <main className="flex flex-col flex-1 min-h-0 min-w-0 w-full h-screen max-h-screen overflow-y-hidden">
       <section className="flex flex-1 flex-col md:flex-row items-center justify-center w-full min-h-0 min-w-0 max-h-full px-6 py-0 gap-12 overflow-hidden">
@@ -185,8 +214,12 @@ export default function BookLessonPage() {
               <div className="text-green-400 font-bold text-lg">Your information was retrieved!</div>
             </div>
           )}
+          <ProgressBar step={step} />
           {step === 1 && (
-            <form className="bg-[#18181b] p-8 rounded-2xl shadow-xl w-full border-2 border-[#3881ff] flex flex-col gap-6 max-w-lg mx-auto min-h-0 min-w-0" onSubmit={handleSubmit}>
+            <form className="bg-[#18181b] p-8 rounded-2xl shadow-xl w-full border-2 border-[#3881ff] flex flex-col gap-6 max-w-lg mx-auto min-h-0 min-w-0" onSubmit={async (e) => {
+              await handleSubmit(e);
+              setStep(2);
+            }}>
               <input name="name" required placeholder="Name" defaultValue={Cookies.get("booking_name") || ""} className="p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#3881ff]" />
               <input name="email" required type="email" placeholder="Email" defaultValue={Cookies.get("booking_email") || ""} className="p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#3881ff]" />
               <div>
@@ -251,8 +284,24 @@ export default function BookLessonPage() {
               >
                 <PaymentElement
                   options={{ paymentMethodOrder: ['card', 'konbini', 'google_pay'] }}
+                  // Add onPaymentComplete or similar logic here if needed
                 />
               </Elements>
+              <button
+                className="mt-6 px-8 py-3 rounded-xl bg-[#3881ff] text-white font-extrabold text-lg shadow-lg hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-[#3881ff]/50"
+                onClick={() => setStep(3)}
+              >
+                Simulate Confirmation
+              </button>
+            </div>
+          )}
+          {step === 3 && (
+            <div className="bg-[#18181b] p-8 rounded-2xl shadow-xl w-full flex flex-col items-center gap-6 max-w-lg mx-auto min-h-0 min-w-0 max-h-[90vh] justify-center">
+              <svg className="w-16 h-16 text-green-400 mb-2" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <div className="text-green-400 font-bold text-2xl mb-2">Booking Confirmed!</div>
+              <div className="text-gray-300 text-center">Thank you for your booking. A confirmation email will be sent to you shortly.</div>
             </div>
           )}
         </div>
