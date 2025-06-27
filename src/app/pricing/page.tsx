@@ -97,7 +97,7 @@ export default function PricingPage() {
             className="px-8 py-3 rounded-full font-bold text-lg uppercase tracking-wide bg-[#3881ff] text-white shadow-md border border-[#3881ff] hover:scale-105 hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 focus:ring-offset-[#18181b]"
             style={{textShadow:'0 1px 6px rgba(56,129,255,0.10)'}}
           >
-            Book a Lesson
+            レッスンを予約
           </Link>
         </div>
       </section>

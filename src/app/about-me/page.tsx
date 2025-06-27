@@ -54,7 +54,7 @@ export default function AboutMePage() {
           </div>
         )}
         <div className="flex flex-col items-start justify-center flex-1 min-h-0 w-full md:min-w-180 max-w-xl text-wrap mt-6 md:mt-0">
-          <h1 className="text-3xl xs:text-4xl sm:text-5xl font-extrabold text-[#3881ff] mb-4 text-left whitespace-nowrap md:whitespace-nowrap" style={{textShadow:'0 2px 12px rgba(56,129,255,0.10)'}}>About Me</h1>
+          <h1 className="text-3xl xs:text-4xl sm:text-5xl font-extrabold text-[#3881ff] mb-4 text-left whitespace-nowrap md:whitespace-nowrap" style={{textShadow:'0 2px 12px rgba(56,129,255,0.10)'}}>私について</h1>
           <div className="prose prose-base sm:prose-lg prose-invert mb-6 w-full max-w-none">
             <PortableText value={Array.isArray(about.bio) ? about.bio : []} />
           </div>
@@ -63,7 +63,7 @@ export default function AboutMePage() {
             className="flex items-center justify-center px-6 sm:px-8 py-3 rounded-full font-bold text-base sm:text-lg uppercase tracking-wide bg-[#3881ff] text-white shadow-md border border-[#3881ff] hover:scale-105 hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 focus:ring-offset-[#18181b] text-center w-full sm:w-auto mb-6 sm:mb-0"
             style={{textShadow:'0 1px 6px rgba(56,129,255,0.10)'}}
           >
-            Book a Lesson
+            レッスンを予約
           </Link>
         </div>
       </section>
