@@ -309,6 +309,18 @@ export default function BookLessonPage() {
                   ))}
                 </select>
               </div>
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="certify"
+                  name="certify"
+                  required
+                  className="mt-1 accent-[#3881ff] w-5 h-5"
+                />
+                <label htmlFor="certify" className="text-gray-200 text-sm select-none">
+                  I certify that my child has a computer they can use for the lesson, stable internet, a game they&apos;d like to play together, and a working microphone.
+                </label>
+              </div>
               {formError && <div className="text-red-400 font-bold">{formError}</div>}
               <button type="submit" className="mt-4 px-8 py-3 rounded-xl bg-[#3881ff] text-white font-extrabold text-lg shadow-lg hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-[#3881ff]/50" disabled={formLoading}>
                 {formLoading ? "Loading..." : "Continue to Payment"}
