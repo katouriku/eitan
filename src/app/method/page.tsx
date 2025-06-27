@@ -50,7 +50,7 @@ export default function MethodPage() {
             />
           </div>
         )}
-        <div className="flex flex-col items-start justify-center max-w-2xl min-w-[340px] w-full order-2 md:order-none min-h-0 min-w-0">
+        <div className="flex flex-col items-start justify-center max-w-2xl w-full order-2 md:order-none min-h-0 min-w-0">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-[#3881ff] mb-4 text-left whitespace-nowrap" style={{textShadow:'0 2px 12px rgba(56,129,255,0.10)'}}>{method.title || "Method"}</h1>
           <div className="text-lg text-gray-100 text-left leading-relaxed mb-6">
             <PortableText value={Array.isArray(method.content) ? method.content : []} />
