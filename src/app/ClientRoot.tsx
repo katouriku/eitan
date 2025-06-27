@@ -37,9 +37,9 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
   // Homepage content state
   const [homepage, setHomepage] = useState({
     mainTitle: "エイタン",
-    subtitle: "Start your English journey today!",
+    subtitle: "",
     description:
-      "Friendly, modern English lessons focused on conversation, confidence, and real-world skills. Book a lesson or explore more below.",
+      "",
   });
 
   // Fetch homepage content from Sanity
