@@ -7,16 +7,30 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import "./globals.css";
 
+// Add: Hamburger menu state
+function HamburgerIcon({ open }: { open: boolean }) {
+  return (
+    <div className="flex flex-col justify-center items-center w-8 h-8">
+      <span className={`block h-1 w-6 bg-[#3881ff] rounded transition-all duration-200 ${open ? "rotate-45 translate-y-2" : ""}`}></span>
+      <span className={`block h-1 w-6 bg-[#3881ff] rounded my-1 transition-all duration-200 ${open ? "opacity-0" : ""}`}></span>
+      <span className={`block h-1 w-6 bg-[#3881ff] rounded transition-all duration-200 ${open ? "-rotate-45 -translate-y-2" : ""}`}></span>
+    </div>
+  );
+}
+
 export default function ClientRoot({ children }: { children: React.ReactNode }) {
   // Navigation state
   const [nav, setNav] = useState([
-    { label: "Book Lesson", href: "/book-lesson" },
+    { label: "Book Now", href: "/book-lesson" },
     { label: "Method", href: "/method" },
     { label: "Pricing", href: "/pricing" },
     { label: "About Me", href: "/about-me" },
   ]);
   const pathname = usePathname();
   const isStudio = pathname.startsWith("/studio");
+
+  // Hamburger menu state
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Fetch navigation from Sanity (memoized)
   const fetchNav = useCallback(async () => {
@@ -58,16 +72,26 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
   // Home page UI
   // Use the same header for all pages except /studio
   if (!isStudio) {
-    // Flat dark gray background for the entire site, including header
     return (
       <div className="min-h-screen w-full flex flex-col bg-[#18181b]">
-        <header className="w-full flex items-center justify-between px-6 py-6 md:py-8 bg-transparent fixed top-0 left-0 right-0 z-40">
-          <div className="flex items-center gap-4">
-            <h1 className="text-4xl xs:text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-center select-none m-0 mb-2 flex flex-wrap items-center justify-center gap-x-2">
-              <Link href="/"><span className="text-[#3881ff]" style={{textShadow:'0 2px 12px rgba(56,129,255,0.10)'}}>{homepage.mainTitle}</span></Link>
-            </h1>
-          </div>
-          <nav className="flex gap-4 md:gap-6 items-center">
+        <header
+          className="w-full px-6 py-3 md:py-4 bg-transparent fixed top-0 left-0 right-0 z-40 flex flex-col items-center sm:flex-row sm:justify-between sm:items-center"
+          style={{ backgroundColor: "rgba(24,24,27,0.85)" }}
+        >
+          {/* Hamburger: mobile only, absolutely positioned */}
+          <button
+            className="sm:hidden flex items-center justify-center absolute left-6 top-1/2 -translate-y-1/2"
+            aria-label="Open menu"
+            onClick={() => setMenuOpen(true)}
+            type="button"
+          >
+            <HamburgerIcon open={false} />
+          </button>
+          <h1 className="text-4xl xs:text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-center select-none m-0 mb-2 flex flex-wrap items-center justify-center gap-x-2 w-full sm:w-auto sm:mb-0">
+            <Link href="/"><span className="text-[#3881ff]" style={{textShadow:'0 2px 12px rgba(56,129,255,0.10)'}}>{homepage.mainTitle}</span></Link>
+          </h1>
+          {/* Desktop nav (top right) */}
+          <nav className="hidden sm:flex gap-4 md:gap-6 items-center mt-2 sm:mt-0 sm:ml-0 sm:absolute sm:right-6 sm:top-1/2 sm:-translate-y-1/2">
             {nav.slice(1).map((item) => (
               <Link
                 key={item.href}
@@ -81,22 +105,54 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
             ))}
           </nav>
         </header>
+        {/* Hamburger menu overlay */}
+        {menuOpen && (
+          <div className="fixed inset-0 z-50 bg-[#18181b] bg-opacity-95 flex flex-col items-center justify-center sm:hidden transition-all">
+            <button
+              className="absolute top-6 left-6"
+              aria-label="Close menu"
+              onClick={() => setMenuOpen(false)}
+              type="button"
+            >
+              <HamburgerIcon open={true} />
+            </button>
+            <nav className="flex flex-col gap-8 mt-12">
+              {nav.slice(1).map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-label={item.label}
+                  className="text-3xl font-bold text-[#3881ff] hover:text-white transition-all text-center"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        )}
         <main className="flex-1 w-full flex flex-col pt-[88px]">
           {pathname === "/" ? (
             <section className="flex flex-1 flex-col items-center justify-center w-full min-h-[calc(100vh-88px)]">
-              <div className="max-w-xl w-full flex flex-col items-center justify-center mt-2">
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#3881ff] mb-4 text-center">{homepage.subtitle}</h2>
-                <p className="text-lg sm:text-xl text-gray-200 mb-8 text-center">
-                  {homepage.description}
-                </p>
-                <Link
-                  href={nav[0].href}
-                  aria-label={nav[0].label}
-                  className="w-full sm:w-auto px-10 py-5 rounded-full font-extrabold text-2xl uppercase tracking-wide bg-[#3881ff] text-white shadow-xl border border-[#3881ff] hover:scale-105 hover:shadow-2xl transition-all text-center mb-6 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 focus:ring-offset-[#18181b]"
-                  style={{textShadow:'0 2px 12px rgba(56,129,255,0.13)'}}
-                >
-                  {nav[0].label}
-                </Link>
+              <div className="w-full flex flex-col items-center justify-center mt-2">
+                {/* Main text, always centered, max-w-xl for all screens */}
+                <div className="flex flex-col items-center w-full max-w-xl">
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#3881ff] mb-4 text-center break-words">{homepage.subtitle}</h2>
+                  <p className="text-lg sm:text-xl text-gray-200 mb-8 text-center break-words">
+                    {homepage.description}
+                  </p>
+                </div>
+                {/* Book Now button below main text on mobile and desktop */}
+                <div className="w-full flex flex-col items-center mb-8">
+                  <Link
+                    href={nav[0].href}
+                    aria-label={nav[0].label}
+                    className="px-8 sm:px-10 py-4 sm:py-5 rounded-full font-bold sm:font-extrabold text-lg sm:text-2xl uppercase tracking-wide bg-[#3881ff] text-white shadow-md sm:shadow-xl border border-[#3881ff] hover:scale-105 hover:shadow-lg sm:hover:shadow-2xl transition-all text-center focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 focus:ring-offset-[#18181b] mb-0"
+                    style={{textShadow:'0 1px 6px rgba(56,129,255,0.10)'}}
+                  >
+                    {nav[0].label}
+                  </Link>
+                </div>
               </div>
             </section>
           ) : (
