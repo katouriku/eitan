@@ -31,6 +31,8 @@ export default function BookLessonPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const paymentFormRef = useRef<HTMLDivElement>(null);
 
+  const isLoading = !weeklyAvailability || weeklyAvailability.length === 0;
+
   useEffect(() => {
     async function fetchAvailability() {
       const data = await client.fetch(groq`*[_type == "availability"][0]{weeklyAvailability}`);
@@ -57,6 +59,14 @@ export default function BookLessonPage() {
       Cookies.remove("booking_time");
     }
   }, [step]);
+
+  if (isLoading) {
+    return (
+      <main className="flex flex-col flex-1 min-h-0 min-w-0 w-full h-screen max-h-screen items-center justify-center">
+        <div className="text-2xl text-gray-400">Loading...</div>
+      </main>
+    );
+  }
 
   // Helper: Map day string to JS weekday index
   const dayToIndex: Record<string, number> = {

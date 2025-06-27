@@ -26,6 +26,15 @@ export default function MethodPage() {
     fetchMethod();
   }, []);
 
+  // Show loading state until Sanity content is ready
+  if (!method || (!method.title && (!Array.isArray(method.content) || method.content.length === 0) && !method.image)) {
+    return (
+      <main className="flex flex-col flex-1 min-h-0 min-w-0 w-full h-screen max-h-screen items-center justify-center">
+        <div className="text-2xl text-gray-400">Loading...</div>
+      </main>
+    );
+  }
+
   return (
     <main className="flex flex-col flex-1 min-h-0 min-w-0 w-full h-screen max-h-screen">
       <section className="flex flex-1 flex-col md:flex-row items-center justify-center w-full min-h-0 min-w-0 max-h-full px-6 py-10 gap-12">
