@@ -28,6 +28,8 @@ export default function PricingPage() {
   });
   const [imageLoaded, setImageLoaded] = useState(false);
 
+  const isLoading = !pricing || (!pricing.title && !pricing.details.length && !pricing.image);
+
   useEffect(() => {
     async function fetchPricing() {
       const data = await client.fetch(
@@ -48,6 +50,14 @@ export default function PricingPage() {
   useEffect(() => {
     if (!pricing.image || imageLoaded) setImageLoaded(true);
   }, [pricing.image, imageLoaded]);
+
+  if (isLoading) {
+    return (
+      <main className="flex flex-col flex-1 min-h-0 min-w-0 w-full h-screen max-h-screen items-center justify-center">
+        <div className="text-2xl text-gray-400">Loading...</div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex flex-col flex-1 min-h-0 min-w-0 w-full h-screen max-h-screen">

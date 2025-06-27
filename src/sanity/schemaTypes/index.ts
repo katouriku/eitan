@@ -28,7 +28,7 @@ const about: SchemaTypeDefinition = {
   title: 'About Me',
   type: 'document',
   fields: [
-    { name: 'bio', title: 'Bio', type: 'text' },
+    { name: 'bio', title: 'Bio', type: 'array', of: [{ type: 'block' }] },
     { name: 'headshot', title: 'Headshot', type: 'image', options: { hotspot: true } },
   ],
 }
