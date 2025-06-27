@@ -53,7 +53,7 @@ export default function AboutMePage() {
             />
           </div>
         )}
-        <div className="flex flex-col items-start justify-center flex-1 min-h-0 w-full max-w-xl text-wrap mt-6 md:mt-0">
+        <div className="flex flex-col items-start justify-center flex-1 min-h-0 w-full md:min-w-180 max-w-xl text-wrap mt-6 md:mt-0">
           <h1 className="text-3xl xs:text-4xl sm:text-5xl font-extrabold text-[#3881ff] mb-4 text-left whitespace-nowrap md:whitespace-nowrap" style={{textShadow:'0 2px 12px rgba(56,129,255,0.10)'}}>About Me</h1>
           <div className="prose prose-base sm:prose-lg prose-invert mb-6 w-full max-w-none">
             <PortableText value={Array.isArray(about.bio) ? about.bio : []} />
