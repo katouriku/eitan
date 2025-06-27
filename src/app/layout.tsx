@@ -24,8 +24,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#18181b]`}>
+    <html lang="en" style={{ height: "100%" }}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#18181b]`}
+        style={{
+          minHeight: "100%",
+          height: "100%",
+          maxHeight: "100vh",
+          overflow: "hidden",
+        }}
+      >
         <ClientRoot>{children}</ClientRoot>
       </body>
     </html>
