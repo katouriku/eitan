@@ -21,10 +21,10 @@ function HamburgerIcon({ open }: { open: boolean }) {
 export default function ClientRoot({ children }: { children: React.ReactNode }) {
   // Navigation state
   const [nav, setNav] = useState([
-    { label: "Book Now", href: "/book-lesson" },
-    { label: "Method", href: "/method" },
-    { label: "Pricing", href: "/pricing" },
-    { label: "About Me", href: "/about-me" },
+    { label: "レッスンを予約", href: "/book-lesson" },
+    { label: "方法", href: "/method" },
+    { label: "料金", href: "/pricing" },
+    { label: "私について", href: "/about-me" },
   ]);
   const pathname = usePathname();
   const isStudio = pathname.startsWith("/studio");

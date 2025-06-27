@@ -218,7 +218,7 @@ export default function BookLessonPage() {
               className="absolute left-0 text-[#3881ff] hover:underline font-bold cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#3881ff]"
               style={{ minWidth: 60, textAlign: 'center', transform: 'translateX(-50%)', left: 'calc(0% + 18px)' }}
             >
-              Info
+              予約情報
             </button>
           ) : (
             <span
@@ -228,7 +228,7 @@ export default function BookLessonPage() {
               }
               style={{ minWidth: 60, textAlign: 'center', transform: 'translateX(-50%)', left: 'calc(0% + 18px)' }}
             >
-              Info
+              予約情報
             </span>
           )}
           {/* Payment label */}
@@ -241,7 +241,7 @@ export default function BookLessonPage() {
               className="absolute left-1/2 text-[#3881ff] hover:underline font-bold cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#3881ff]"
               style={{ minWidth: 60, textAlign: 'center', transform: 'translateX(-50%)' }}
             >
-              Payment
+              支払い
             </button>
           ) : (
             <span
@@ -251,7 +251,7 @@ export default function BookLessonPage() {
               }
               style={{ minWidth: 60, textAlign: 'center', transform: 'translateX(-50%)' }}
             >
-              Payment
+              支払い
             </span>
           )}
           {/* Done label (never clickable) */}
@@ -262,7 +262,7 @@ export default function BookLessonPage() {
             }
             style={{ minWidth: 60, textAlign: 'center', transform: 'translateX(50%)', right: 'calc(0% + 18px)' }}
           >
-            Done
+            確認
           </span>
         </div>
       </div>
@@ -277,7 +277,7 @@ export default function BookLessonPage() {
             className="font-extrabold text-3xl sm:text-4xl md:text-5xl text-[#3881ff] mb-8 text-center w-full"
             style={{textShadow:'0 2px 12px rgba(56,129,255,0.10)'}}
           >
-            Book a Lesson
+            レッスンを予約
           </span>
           <ProgressBar step={step} />
           {step === 1 && (
@@ -285,10 +285,10 @@ export default function BookLessonPage() {
               await handleSubmit(e);
               setStep(2);
             }}>
-              <input name="name" required placeholder="Name" defaultValue={Cookies.get("booking_name") || ""} className="p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#3881ff]" />
-              <input name="email" required type="email" placeholder="Email" defaultValue={Cookies.get("booking_email") || ""} className="p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#3881ff]" />
+              <input name="name" required placeholder="お名前" defaultValue={Cookies.get("booking_name") || ""} className="p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#3881ff]" />
+              <input name="email" required type="email" placeholder="メールアドレス" defaultValue={Cookies.get("booking_email") || ""} className="p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#3881ff]" />
               <div>
-                <label className="block text-gray-200 mb-2">Select Date</label>
+                <label className="block text-gray-200 mb-2">予約日</label>
                 <select
                   value={selectedDate}
                   onChange={(e) => {
@@ -298,14 +298,14 @@ export default function BookLessonPage() {
                   required
                   className="w-full p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 mb-2 focus:outline-none focus:ring-2 focus:ring-[#3881ff]"
                 >
-                  <option value="">-- Select a date --</option>
+                  <option value="">-- 日を選んでください --</option>
                   {getAvailableDates().map((date) => (
                     <option key={date} value={date}>{date}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-gray-200 mb-2">Select Time</label>
+                <label className="block text-gray-200 mb-2">予約時間</label>
                 <select
                   value={selectedTime}
                   onChange={(e) => setSelectedTime(e.target.value)}
@@ -313,27 +313,15 @@ export default function BookLessonPage() {
                   className="w-full p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#3881ff]"
                   disabled={!selectedDate}
                 >
-                  <option value="">-- Select a time --</option>
+                  <option value="">-- 時間を選んでください --</option>
                   {getTimesForDate(selectedDate).map((time) => (
                     <option key={time} value={time}>{time}</option>
                   ))}
                 </select>
               </div>
-              <div className="flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  id="certify"
-                  name="certify"
-                  required
-                  className="mt-1 accent-[#3881ff] w-5 h-5"
-                />
-                <label htmlFor="certify" className="text-gray-200 text-sm select-none">
-                  I certify that my child has a computer they can use for the lesson, stable internet, a game they&apos;d like to play together, and a working microphone.
-                </label>
-              </div>
               {formError && <div className="text-red-400 font-bold">{formError}</div>}
               <button type="submit" className="mt-4 px-8 py-3 rounded-xl bg-[#3881ff] text-white font-extrabold text-lg shadow-lg hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-[#3881ff]/50" disabled={formLoading}>
-                {formLoading ? "Loading..." : "Continue to Payment"}
+                {formLoading ? "Loading..." : "支払いへ進む"}
               </button>
             </form>
           )}
@@ -348,6 +336,7 @@ export default function BookLessonPage() {
                 stripe={stripePromise}
                 options={{
                   clientSecret,
+                  locale: 'ja', // Set Stripe Elements to Japanese
                   appearance: {
                     theme: 'night',
                     variables: {
@@ -379,8 +368,11 @@ export default function BookLessonPage() {
               <svg className="w-16 h-16 text-green-400 mb-2" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
-              <div className="text-green-400 font-bold text-2xl mb-2">Booking Confirmed!</div>
-              <div className="text-gray-300 text-center">Thank you for your booking. A confirmation email will be sent to you shortly.</div>
+              <div className="text-green-400 font-bold text-2xl mb-2">予約完了!</div>
+              <div className="text-gray-300 text-center">
+                ご予約ありがとうございます。<br />
+                予約確認メールが間もなく送信されます。
+              </div>
             </div>
           )}
         </div>
