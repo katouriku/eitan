@@ -29,6 +29,7 @@ export default function BookLessonPage() {
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [lessonType, setLessonType] = useState<"online" | "in-person" | "">("");
   const paymentFormRef = useRef<HTMLDivElement>(null);
 
   const isLoading = !weeklyAvailability || weeklyAvailability.length === 0;
@@ -275,16 +276,34 @@ export default function BookLessonPage() {
         <div className="flex flex-col items-center justify-center max-w-2xl min-w-[340px] w-full order-2 md:order-none min-h-0">
           <span
             className="font-extrabold text-3xl sm:text-4xl md:text-5xl text-[#3881ff] mb-8 text-center w-full"
-            style={{textShadow:'0 2px 12px rgba(56,129,255,0.10)'}}
-          >
+            style={{textShadow:'0 2px 12px rgba(56,129,255,0.10)'}}>
             レッスンを予約
           </span>
           <ProgressBar step={step} />
-          {step === 1 && (
+          {step === 1 && lessonType === "" && (
+            <div className="bg-[#18181b] p-8 rounded-2xl shadow-xl w-full border-2 border-[#3881ff] flex flex-col gap-6 max-w-lg mx-auto min-h-0 min-w-0 mb-8">
+              <div className="text-lg text-gray-100 mb-4 text-center font-bold">レッスンの種類を選択してください</div>
+              <button
+                className="w-full px-6 py-4 rounded-xl bg-[#3881ff] text-white font-extrabold text-lg shadow-lg hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-[#3881ff]/50 mb-4"
+                onClick={() => setLessonType("online")}
+              >
+                オンラインレッスン
+              </button>
+              <button
+                className="w-full px-6 py-4 rounded-xl bg-[#3881ff] text-white font-extrabold text-lg shadow-lg hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-[#3881ff]/50"
+                onClick={() => setLessonType("in-person")}
+              >
+                対面レッスン
+              </button>
+              <div className="text-xs text-gray-400 mt-2 text-center">※ 対面レッスンは美里町から30分以内の場所のみ対応しています。</div>
+            </div>
+          )}
+          {step === 1 && lessonType !== "" && (
             <form className="bg-[#18181b] p-8 rounded-2xl shadow-xl w-full border-2 border-[#3881ff] flex flex-col gap-6 max-w-lg mx-auto min-h-0 min-w-0" onSubmit={async (e) => {
               await handleSubmit(e);
               setStep(2);
             }}>
+              <input type="hidden" name="lessonType" value={lessonType} />
               <input name="name" required placeholder="お名前" defaultValue={Cookies.get("booking_name") || ""} className="p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#3881ff]" />
               <input name="email" required type="email" placeholder="メールアドレス" defaultValue={Cookies.get("booking_email") || ""} className="p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#3881ff]" />
               <div>
@@ -323,6 +342,7 @@ export default function BookLessonPage() {
               <button type="submit" className="mt-4 px-8 py-3 rounded-xl bg-[#3881ff] text-white font-extrabold text-lg shadow-lg hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-[#3881ff]/50" disabled={formLoading}>
                 {formLoading ? "Loading..." : "支払いへ進む"}
               </button>
+              <button type="button" className="mt-2 text-[#3881ff] underline text-sm" onClick={() => setLessonType("")}>戻る</button>
             </form>
           )}
           {step === 2 && clientSecret && (
