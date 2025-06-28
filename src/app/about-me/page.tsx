@@ -39,10 +39,10 @@ export default function AboutMePage() {
   }
 
   return (
-    <main className="flex flex-col flex-1 min-w-0 w-full pt-20 pb-24">
-      <section className="flex flex-1 flex-col md:flex-row items-center md:items-start justify-center w-full min-h-0 min-w-0 max-h-full px-4 sm:px-6 pt-0 sm:pt-10 gap-0 md:gap-8 pb-6">
+    <main className="flex flex-col flex-1 min-w-0 w-full">
+      <section className="flex flex-1 flex-col md:flex-row items-center md:items-start justify-center w-full min-h-0 min-w-0 max-h-full px-4 sm:px-6 sm:pt-10 gap-0 md:gap-8 pb-6">
         {about.headshot && (
-          <div className="flex-shrink-0 relative aspect-[413/531] w-40 xs:w-48 sm:w-56 md:w-64 lg:w-80 rounded-2xl overflow-hidden self-center md:self-auto min-h-0 min-w-0 mt-2 mb-8 md:mt-0 md:mb-0">
+          <div className="flex-shrink-0 relative aspect-[413/531] w-60 rounded-2xl overflow-hidden self-center md:self-auto min-h-0 min-w-0">
             <Image
               src={urlFor(about.headshot).width(413).height(531).url()}
               alt="Headshot"
@@ -60,7 +60,7 @@ export default function AboutMePage() {
           </div>
           <Link
             href="/book-lesson"
-            className="flex items-center justify-center px-6 sm:px-8 py-3 rounded-full font-bold text-base sm:text-lg uppercase tracking-wide bg-[#3881ff] text-white shadow-md border border-[#3881ff] hover:scale-105 hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 focus:ring-offset-[#18181b] text-center w-full sm:w-auto mb-6 sm:mb-0"
+            className="flex items-center justify-center px-6 sm:px-8 py-3 rounded-full font-bold text-base sm:text-lg uppercase tracking-wide bg-[#3881ff] text-white shadow-md border border-[#3881ff] hover:scale-105 hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 focus:ring-offset-[#18181b] text-center w-full sm:w-auto"
             style={{textShadow:'0 1px 6px rgba(56,129,255,0.10)'}}
           >
             レッスンを予約
