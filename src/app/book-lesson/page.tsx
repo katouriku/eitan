@@ -271,7 +271,7 @@ export default function BookLessonPage() {
   }
 
   return (
-    <main className="flex flex-col flex-1 min-w-0 w-full pt-20 pb-24">
+    <main className="flex flex-col flex-1 min-w-0 w-full">
       <section className="flex flex-col items-center justify-center w-full px-4 py-10">
         <div className="flex flex-col items-center justify-center max-w-2xl min-w-[340px] w-full order-2 md:order-none min-h-0">
           <span
