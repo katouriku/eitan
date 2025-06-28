@@ -163,8 +163,8 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
           )}
         </main>
         {/* Footer with contact email */}
-        <footer className="w-full px-6 py-4 bg-transparent text-gray-400 text-sm flex flex-row items-center justify-end pointer-events-auto">
-          <span className="mr-2">メール:</span>
+        <footer className="w-full px-6 pb-4 bg-transparent text-gray-400 text-sm flex flex-row items-center justify-end pointer-events-auto">
+          <span className="mr-1">メール:</span>
           <a href="mailto:lucaswilsoncontact@gmail.com" className="text-[#3881ff] hover:underline">lucaswilsoncontact@gmail.com</a>
         </footer>
       </div>
