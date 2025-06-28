@@ -25,11 +25,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" style={{ height: "100%" }}>
+      <head>
+        <link
+          rel="icon"
+          href="/favicon.ico"
+          type="image/x-icon"
+          sizes="32x32"
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#18181b]`}
-        style={{
-
-        }}
+        style={{ }}
       >
         <ClientRoot>{children}</ClientRoot>
       </body>
