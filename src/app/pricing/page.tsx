@@ -51,9 +51,9 @@ export default function PricingPage() {
 
   return (
     <main className="flex flex-1 min-w-0 w-full md:pt-20 md:pb-24">
-      <section className="flex flex-col md:flex-row flex-nowrap justify-center items-stretch gap-12 w-full px-6 py-10">
+      <section className="flex flex-col md:flex-row flex-nowrap justify-center items-stretch gap-12 w-full px-6 py-6">
         {pricings.map((pricing, idx) => (
-          <div key={idx} className="flex flex-col md:flex-row items-center md:items-stretch justify-center max-w-3xl w-full md:min-w-180 bg-[#23272f] rounded-2xl shadow-lg p-8 min-h-0 min-w-0">
+          <div key={idx} className="flex flex-col md:flex-row items-center md:items-stretch justify-center max-w-3xl w-full md:min-w-180 bg-[#23272f] rounded-2xl shadow-lg p-6 min-h-0 min-w-0">
             {pricing.image && getImageUrl(pricing.image) && (
               <div className="flex-shrink-0 relative aspect-square w-full md:w-1/2 max-w-xs md:max-w-sm rounded-2xl overflow-hidden mb-4 md:mb-0 md:mr-8">
                 <Image
