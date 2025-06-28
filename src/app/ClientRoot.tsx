@@ -131,9 +131,9 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
             </nav>
           </div>
         )}
-        <main className="flex-1 w-full flex flex-col pt-[88px]">
+        <main className="flex-grow w-full flex flex-col pt-20">
           {pathname === "/" ? (
-            <section className="flex flex-1 flex-col items-center justify-center w-full min-h-[calc(100vh-88px)]">
+            <section className="flex flex-1 flex-col items-center justify-center w-full h-full">
               <div className="w-full flex flex-col items-center justify-center mt-2">
                 {/* Main text, always centered, max-w-xl for all screens */}
                 <div className="flex flex-col items-center w-full max-w-xl">
@@ -148,15 +148,14 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
                     href={nav[0].href}
                     aria-label={nav[0].label}
                     className="px-8 sm:px-10 py-4 sm:py-5 rounded-full font-bold sm:font-extrabold text-lg sm:text-2xl uppercase tracking-wide bg-[#3881ff] text-white shadow-md sm:shadow-xl border border-[#3881ff] hover:scale-105 hover:shadow-lg sm:hover:shadow-2xl transition-all text-center focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 focus:ring-offset-[#18181b] mb-0"
-                    style={{textShadow:'0 1px 6px rgba(56,129,255,0.10)'}}
-                  >
+                    style={{textShadow:'0 1px 6px rgba(56,129,255,0.10)'}}>
                     {nav[0].label}
                   </Link>
                 </div>
               </div>
             </section>
           ) : (
-            <section className="flex flex-1 flex-col items-center justify-center w-full min-h-[calc(100vh-88px)] px-4 py-8">
+            <section className="flex flex-col items-center justify-center w-full px-4 py-8 flex-1">
               <div className="max-w-2xl w-full flex flex-col items-center justify-center mt-2">
                 {children}
               </div>
@@ -164,7 +163,7 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
           )}
         </main>
         {/* Footer with contact email */}
-        <footer className="fixed bottom-0 right-0 z-50 px-6 py-4 bg-transparent text-gray-400 text-sm flex flex-row items-center justify-end pointer-events-auto">
+        <footer className="w-full px-6 py-4 bg-transparent text-gray-400 text-sm flex flex-row items-center justify-end pointer-events-auto">
           <span className="mr-2">メール:</span>
           <a href="mailto:lucaswilsoncontact@gmail.com" className="text-[#3881ff] hover:underline">lucaswilsoncontact@gmail.com</a>
         </footer>

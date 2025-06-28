@@ -32,15 +32,15 @@ export default function AboutMePage() {
   // Show loading state until Sanity content is ready
   if (!about || (!about.bio && !about.headshot)) {
     return (
-      <main className="flex flex-col flex-1 min-h-0 min-w-0 w-full h-screen max-h-screen">
+      <main className="flex flex-col flex-1 min-w-0 w-full min-h-[100vh] pt-20">
         <div className="text-2xl text-gray-400">Loading...</div>
       </main>
     );
   }
 
   return (
-    <main className="flex flex-col flex-1 min-h-0 min-w-0 w-full h-screen max-h-screen">
-      <section className="flex flex-1 flex-col md:flex-row items-center md:items-start justify-center w-full min-h-0 min-w-0 max-h-full px-4 sm:px-6 pt-0 sm:pt-10 pb-6 gap-8 sm:gap-12">
+    <main className="flex flex-col flex-1 min-w-0 w-full pt-20 pb-24">
+      <section className="flex flex-1 flex-col md:flex-row items-center md:items-start justify-center w-full min-h-0 min-w-0 max-h-full px-4 sm:px-6 pt-0 sm:pt-10 gap-0 md:gap-8 pb-6">
         {about.headshot && (
           <div className="flex-shrink-0 relative aspect-[413/531] w-40 xs:w-48 sm:w-56 md:w-64 lg:w-80 rounded-2xl overflow-hidden self-center md:self-auto min-h-0 min-w-0 mt-2 mb-8 md:mt-0 md:mb-0">
             <Image
