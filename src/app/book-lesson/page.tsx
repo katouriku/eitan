@@ -64,7 +64,7 @@ export default function BookLessonPage() {
   if (isLoading) {
     return (
       <main className="flex flex-col flex-1 min-w-0 w-full min-h-[100vh] pt-20">
-        <div className="text-2xl text-gray-400">Loading...</div>
+        <div className="text-2xl text-gray-400">ロード中...</div>
       </main>
     );
   }
@@ -272,7 +272,7 @@ export default function BookLessonPage() {
 
   return (
     <main className="flex flex-col flex-1 min-w-0 w-full">
-      <section className="flex flex-col items-center justify-center w-full px-4 py-10">
+      <section className="flex flex-col items-center justify-center w-full px-4">
         <div className="flex flex-col items-center justify-center max-w-2xl min-w-[340px] w-full order-2 md:order-none min-h-0">
           <span
             className="font-extrabold text-3xl sm:text-4xl md:text-5xl text-[#3881ff] mb-8 text-center w-full"
@@ -340,7 +340,7 @@ export default function BookLessonPage() {
               </div>
               {formError && <div className="text-red-400 font-bold">{formError}</div>}
               <button type="submit" className="mt-4 px-8 py-3 rounded-xl bg-[#3881ff] text-white font-extrabold text-lg shadow-lg hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-[#3881ff]/50" disabled={formLoading}>
-                {formLoading ? "Loading..." : "支払いへ進む"}
+                {formLoading ? "ロード中..." : "支払いへ進む"}
               </button>
               <button type="button" className="mt-2 text-[#3881ff] underline text-sm" onClick={() => setLessonType("")}>戻る</button>
             </form>

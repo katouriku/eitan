@@ -44,7 +44,7 @@ export default function PricingPage() {
   if (isLoading) {
     return (
       <main className="flex flex-col flex-1 min-w-0 w-full min-h-[100vh] pt-20">
-        <div className="text-2xl text-gray-400">Loading...</div>
+        <div className="text-2xl text-gray-400">ロード中...</div>
       </main>
     );
   }
@@ -55,14 +55,12 @@ export default function PricingPage() {
         {pricings.map((pricing, idx) => (
           <div key={idx} className="flex flex-col md:flex-row items-center md:items-stretch justify-center max-w-3xl w-full md:min-w-180 bg-[#23272f] rounded-2xl shadow-lg p-6 min-h-0 min-w-0">
             {pricing.image && getImageUrl(pricing.image) && (
-              <div className="flex-shrink-0 relative w-full md:w-1/2 max-w-xs md:max-w-sm rounded-2xl overflow-hidden mb-4 md:mb-0 md:mr-8">
+              <div className="flex-shrink-0 relative aspect-square w-full md:w-1/2 max-w-xs md:max-w-sm rounded-2xl overflow-hidden mb-4 md:mb-0 md:mr-8">
                 <Image
                   src={getImageUrl(pricing.image) as string}
                   alt="Pricing"
-                  fill={false}
-                  width={400}
-                  height={400}
-                  className="object-contain w-full h-auto rounded-2xl border-none"
+                  fill
+                  className="object-cover w-full h-full rounded-2xl border-none"
                   priority
                   sizes="(max-width: 768px) 100vw, 320px"
                 />

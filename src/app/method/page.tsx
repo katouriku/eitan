@@ -30,7 +30,7 @@ export default function MethodPage() {
   if (!method || (!method.title && (!Array.isArray(method.content) || method.content.length === 0) && !method.image)) {
     return (
       <main className="flex flex-col flex-1 min-h-0 min-w-0 w-full h-screen max-h-screen items-center justify-center">
-        <div className="text-2xl text-gray-400">Loading...</div>
+        <div className="text-2xl text-gray-400">ロード中...</div>
       </main>
     );
   }
