@@ -28,10 +28,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#18181b]`}
         style={{
-          minHeight: "100%",
-          height: "100%",
-          maxHeight: "100vh",
-          overflow: "hidden",
+
         }}
       >
         <ClientRoot>{children}</ClientRoot>

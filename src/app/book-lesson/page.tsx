@@ -63,7 +63,7 @@ export default function BookLessonPage() {
 
   if (isLoading) {
     return (
-      <main className="flex flex-col flex-1 min-h-0 min-w-0 w-full h-screen max-h-screen items-center justify-center">
+      <main className="flex flex-col flex-1 min-w-0 w-full min-h-[100vh] pt-20">
         <div className="text-2xl text-gray-400">Loading...</div>
       </main>
     );
@@ -271,8 +271,8 @@ export default function BookLessonPage() {
   }
 
   return (
-    <main className="flex flex-col flex-1 min-h-0 min-w-0 w-full h-screen max-h-screen overflow-y-hidden">
-      <section className="flex flex-1 flex-col md:flex-row items-center justify-center w-full min-h-0 min-w-0 max-h-full px-6 py-0 gap-12 overflow-hidden">
+    <main className="flex flex-col flex-1 min-w-0 w-full pt-20 pb-24">
+      <section className="flex flex-col items-center justify-center w-full px-4 py-10">
         <div className="flex flex-col items-center justify-center max-w-2xl min-w-[340px] w-full order-2 md:order-none min-h-0">
           <span
             className="font-extrabold text-3xl sm:text-4xl md:text-5xl text-[#3881ff] mb-8 text-center w-full"
