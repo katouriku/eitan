@@ -295,7 +295,7 @@ export default function BookLessonPage() {
               >
                 対面レッスン
               </button>
-              <div className="text-xs text-gray-400 mt-2 text-center">※ 対面レッスンは美里町から30分以内の場所のみ対応しています。</div>
+              <div className="text-xs text-gray-500 mt-2 text-center">※ 対面レッスンは美里町から30分以内の場所のみ対応しています。</div>
             </div>
           )}
           {step === 1 && lessonType !== "" && (
