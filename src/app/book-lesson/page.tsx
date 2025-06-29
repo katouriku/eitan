@@ -8,6 +8,7 @@ import { client } from "@/sanity/lib/client";
 import { groq } from "next-sanity";
 import Cookies from "js-cookie";
 import "../globals.css";
+import { useStripe, useElements } from "@stripe/react-stripe-js";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -21,6 +22,60 @@ interface WeeklyAvailability {
   ranges: TimeRange[];
 }
 
+function StripePaymentForm({ onSuccess, onError }: { clientSecret: string, onSuccess: () => void, onError: (msg: string) => void }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    if (!stripe || !elements) {
+      setError("Stripeの初期化中です。しばらくお待ちください。");
+      setLoading(false);
+      return;
+    }
+    const result = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        // Optionally, you can set a return_url here for redirect after payment
+      },
+      redirect: "if_required",
+    });
+    if (result.error) {
+      setError(result.error.message || "支払いに失敗しました。");
+      onError(result.error.message || "支払いに失敗しました。");
+    } else if (result.paymentIntent && result.paymentIntent.status === "succeeded") {
+      onSuccess();
+    } else {
+      setError("支払いの確認ができませんでした。");
+      onError("支払いの確認ができませんでした。");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <form id="stripe-payment-form" onSubmit={handleSubmit} className="flex flex-col gap-6">
+      <PaymentElement
+        options={{
+          paymentMethodOrder: ["card", "konbini", "google_pay"],
+          layout: "tabs",
+        }}
+      />
+      {error && <div className="text-red-400 font-bold mt-2">{error}</div>}
+      <button
+        className="px-8 py-3 rounded-xl bg-green-500 text-white font-extrabold text-lg shadow-lg hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-green-300/50"
+        type="submit"
+        disabled={loading || !stripe || !elements}
+      >
+        {loading ? "処理中..." : "お支払いを確定する"}
+      </button>
+    </form>
+  );
+}
+
 export default function BookLessonPage() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [formLoading, setFormLoading] = useState(false);
@@ -30,6 +85,7 @@ export default function BookLessonPage() {
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [lessonType, setLessonType] = useState<"online" | "in-person" | "">("");
+  const [participants, setParticipants] = useState(1);
   const paymentFormRef = useRef<HTMLDivElement>(null);
 
   const isLoading = !weeklyAvailability || weeklyAvailability.length === 0;
@@ -141,7 +197,7 @@ export default function BookLessonPage() {
       const res = await fetch("/api/create-payment-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: 4000, currency: "jpy" }),
+        body: JSON.stringify({ lessonType, participants, currency: "jpy" }),
       });
       const data = await res.json();
       if (data.clientSecret) {
@@ -270,6 +326,18 @@ export default function BookLessonPage() {
     );
   }
 
+  // Helper: Calculate price
+  function getLessonPrice() {
+    if (!lessonType) return 0;
+    const base = lessonType === "in-person" ? 3000 : lessonType === "online" ? 2500 : 0;
+    if (lessonType === "in-person") {
+      return base + (participants - 1) * 1000;
+    } else if (lessonType === "online") {
+      return base + (participants - 1) * 500;
+    }
+    return base;
+  }
+
   return (
     <main className="flex flex-col flex-1 min-w-0 w-full">
       <section className="flex flex-col items-center justify-center w-full px-4">
@@ -279,6 +347,13 @@ export default function BookLessonPage() {
             style={{textShadow:'0 2px 12px rgba(56,129,255,0.10)'}}>
             レッスンを予約
           </span>
+          {/* Price display, always visible */}
+          <div className="w-full flex flex-col items-center mb-4">
+            <div className="text-lg font-bold text-gray-200 flex flex-row items-center gap-4">
+              <span>合計金額(税込み): <span className="text-[#3881ff] text-2xl font-extrabold">{getLessonPrice().toLocaleString()}円</span></span>
+            </div>
+            <div className="text-sm text-gray-400 mt-2 sm:mt-0 flex flex-row items-center">(参加者数: {participants}人)</div>
+          </div>
           <ProgressBar step={step} />
           {step === 1 && lessonType === "" && (
             <div className="bg-[#18181b] p-8 rounded-2xl shadow-xl w-full border-2 border-[#3881ff] flex flex-col gap-6 max-w-lg mx-auto min-h-0 min-w-0 mb-8">
@@ -304,6 +379,14 @@ export default function BookLessonPage() {
               setStep(2);
             }}>
               <input type="hidden" name="lessonType" value={lessonType} />
+              {/* Participants selector */}
+              <div className="flex flex-row items-center gap-4 mb-2">
+                <label className="text-gray-200 font-bold">参加者数</label>
+                <button type="button" className="px-3 py-1 rounded bg-[#23232a] text-[#3881ff] font-bold text-lg border border-[#3881ff] hover:bg-[#3881ff] hover:text-white transition-all" onClick={() => setParticipants(Math.max(1, participants - 1))}>-</button>
+                <span className="text-lg font-bold text-gray-100 w-8 text-center">{participants}</span>
+                <button type="button" className="px-3 py-1 rounded bg-[#23232a] text-[#3881ff] font-bold text-lg border border-[#3881ff] hover:bg-[#3881ff] hover:text-white transition-all" onClick={() => setParticipants(participants + 1)}>+</button>
+              </div>
+              <input type="hidden" name="participants" value={participants} />
               <input name="name" required placeholder="お名前" defaultValue={Cookies.get("booking_name") || ""} className="p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#3881ff]" />
               <input name="email" required type="email" placeholder="メールアドレス" defaultValue={Cookies.get("booking_email") || ""} className="p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#3881ff]" />
               <div>
@@ -356,7 +439,7 @@ export default function BookLessonPage() {
                 stripe={stripePromise}
                 options={{
                   clientSecret,
-                  locale: 'ja', // Set Stripe Elements to Japanese
+                  locale: 'ja',
                   appearance: {
                     theme: 'night',
                     variables: {
@@ -368,19 +451,18 @@ export default function BookLessonPage() {
                   },
                 }}
               >
-                <PaymentElement
-                  options={{ 
-                    paymentMethodOrder: ['card', 'konbini', 'google_pay'],
-                    layout: 'tabs' // Force tabs layout, which disables Link
-                  }}
+                <StripePaymentForm
+                  clientSecret={clientSecret}
+                  onSuccess={() => setStep(3)}
+                  onError={msg => setFormError(msg)}
                 />
               </Elements>
-              <button
-                className="mt-6 px-8 py-3 rounded-xl bg-[#3881ff] text-white font-extrabold text-lg shadow-lg hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-[#3881ff]/50"
+              {/* <button
+                className="px-8 py-2 rounded-xl bg-[#3881ff] text-white font-extrabold text-lg shadow-lg hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-[#3881ff]/50"
                 onClick={() => setStep(3)}
               >
                 Simulate Confirmation
-              </button>
+              </button> */}
             </div>
           )}
           {step === 3 && (
