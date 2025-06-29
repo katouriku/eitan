@@ -241,20 +241,19 @@ export default function BookLessonPage() {
     if (!date) return [];
     const d = new Date(date);
     const weekday = d.getDay();
-    const avail = weeklyAvailability.find((a) => dayToIndex[a.day] === weekday);
+    const avail = weeklyAvailability.find((a) => {
+      const idx = dayToIndex[a.day];
+      return idx === weekday;
+    });
     if (!avail) return [];
     const slots: string[] = [];
     for (const range of avail.ranges) {
-      const [startHour, startMin] = range.start.split(":").map(Number);
-      const [endHour, endMin] = range.end.split(":").map(Number);
-      const current = new Date(d);
-      current.setHours(startHour, startMin, 0, 0);
-      const end = new Date(d);
-      end.setHours(endHour, endMin, 0, 0);
-      while (current < end) {
-        const slot = current.toTimeString().slice(0, 5); // "HH:mm"
-        slots.push(slot);
-        current.setHours(current.getHours() + 1);
+      const [startHour] = range.start.split(":").map(Number);
+      const [endHour] = range.end.split(":").map(Number);
+      for (let hour = startHour; hour < endHour; hour++) {
+        const slotStart = hour.toString().padStart(2, '0') + ":00";
+        const slotEnd = (hour + 1).toString().padStart(2, '0') + ":00";
+        slots.push(`${slotStart} - ${slotEnd}`);
       }
     }
     return slots;
@@ -629,9 +628,16 @@ export default function BookLessonPage() {
                     className="w-full p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 mb-2 focus:outline-none focus:ring-2 focus:ring-[#3881ff]"
                   >
                     <option value="">-- 日を選んでください --</option>
-                    {getAvailableDates().map((date) => (
-                      <option key={date} value={date}>{date}</option>
-                    ))}
+                    {getAvailableDates().map((date) => {
+                      const d = new Date(date);
+                      const weekday = d.getDay();
+                      const weekdayNames = ["日", "月", "火", "水", "木", "金", "土"];
+                      return (
+                        <option key={date} value={date}>
+                          {date}（{weekdayNames[weekday]}）
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
                 <div className="flex-1">
