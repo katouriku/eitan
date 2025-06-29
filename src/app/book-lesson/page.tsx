@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { loadStripe } from "@stripe/stripe-js/pure";
 import { Elements } from "@stripe/react-stripe-js";
 import { PaymentElement } from "@stripe/react-stripe-js";
@@ -10,6 +10,7 @@ import Cookies from "js-cookie";
 import "../globals.css";
 import { useStripe, useElements } from "@stripe/react-stripe-js";
 import { useQueryParam } from "./useQueryParam";
+
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -91,6 +92,56 @@ export default function BookLessonPage() {
   const paymentFormRef = useRef<HTMLDivElement>(null);
   const lessonTypeParam = useQueryParam("lessonType");
 
+  // Coupon state
+  const [coupon, setCoupon] = useState("");
+  const [finalPrice, setFinalPrice] = useState<number | null>(null);
+  const [priceLoading, setPriceLoading] = useState(false);
+  const [priceError, setPriceError] = useState<string | null>(null);
+  const [couponConfirmed, setCouponConfirmed] = useState(false);
+
+  // Only update price when coupon is confirmed
+  async function updatePrice(lessonType: string, participants: number, coupon: string) {
+    setPriceLoading(true);
+    setPriceError(null);
+    try {
+      const res = await fetch("/api/create-payment-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lessonType, participants, currency: "jpy", coupon }),
+      });
+      const data = await res.json();
+      if (typeof data.finalAmount === "number") {
+        setFinalPrice(data.finalAmount);
+      } else {
+        setFinalPrice(null);
+      }
+      if (data.error) setPriceError(data.error);
+      else setPriceError(null);
+    } catch {
+      setPriceError("価格の取得に失敗しました。");
+      setFinalPrice(null);
+    } finally {
+      setPriceLoading(false);
+    }
+  }
+
+  // Update price when lessonType/participants change or coupon is confirmed
+  useEffect(() => {
+    if (lessonType && participants && couponConfirmed) {
+      updatePrice(lessonType, participants, coupon);
+    } else if (lessonType && participants && !couponConfirmed) {
+      // If coupon not confirmed, show base price
+      setFinalPrice(null);
+      setPriceError(null);
+    }
+  }, [lessonType, participants, couponConfirmed]);
+
+  // Reset coupon confirmation if coupon input changes
+  useEffect(() => {
+    setCouponConfirmed(false);
+    setPriceError(null);
+  }, [coupon]);
+
   const isLoading = !weeklyAvailability || weeklyAvailability.length === 0;
 
   useEffect(() => {
@@ -158,14 +209,6 @@ export default function BookLessonPage() {
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
-  if (isLoading) {
-    return (
-      <main className="flex flex-col flex-1 min-w-0 w-full min-h-[100vh] pt-20">
-        <div className="text-2xl text-gray-400">ロード中...</div>
-      </main>
-    );
-  }
-
   // Helper: Map day string to JS weekday index
   const dayToIndex: Record<string, number> = {
     monday: 1,
@@ -217,6 +260,40 @@ export default function BookLessonPage() {
     return slots;
   }
 
+  // All hooks must be at the top level
+  const getLessonPrice = useCallback(() => {
+    if (!lessonType) return 0;
+    const base = lessonType === "in-person" ? 3000 : lessonType === "online" ? 2500 : 0;
+    if (lessonType === "in-person") {
+      return base + (participants - 1) * 1000;
+    } else if (lessonType === "online") {
+      return base + (participants - 1) * 500;
+    }
+    return base;
+  }, [lessonType, participants]);
+
+  // Only send booking email after payment or free booking is confirmed
+  async function sendBookingEmail({ name, email, kana, date, duration, details }: { name: string, email: string, kana: string, date: string, duration: number, details: string }) {
+    try {
+      const bookingRes = await fetch("/api/book-lesson", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ name, email, kana, date, duration, details }),
+      });
+      const bookingData = await bookingRes.json();
+      if (!bookingData.ok) {
+        setFormError(bookingData.error || "メール送信に失敗しました。");
+        return false;
+      }
+      return true;
+    } catch {
+      setFormError("メール送信に失敗しました。");
+      return false;
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setFormError(null);
@@ -230,6 +307,7 @@ export default function BookLessonPage() {
     const form = e.currentTarget as HTMLFormElement;
     const nameValue = (form.elements.namedItem("name") as HTMLInputElement)?.value || "";
     const emailValue = (form.elements.namedItem("email") as HTMLInputElement)?.value || "";
+    const kanaValue = (form.elements.namedItem("kana") as HTMLInputElement)?.value || "";
     Cookies.set("booking_name", nameValue, { expires: 7 });
     Cookies.set("booking_email", emailValue, { expires: 7 });
     Cookies.set("booking_date", selectedDate, { expires: 7 });
@@ -238,10 +316,21 @@ export default function BookLessonPage() {
       const res = await fetch("/api/create-payment-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lessonType, participants, currency: "jpy" }),
+        body: JSON.stringify({ lessonType, participants, currency: "jpy", coupon: couponConfirmed ? coupon : undefined }),
       });
       const data = await res.json();
-      if (data.clientSecret) {
+      if (data.free) {
+        // Free booking, send email now
+        const emailSent = await sendBookingEmail({
+          name: nameValue,
+          email: emailValue,
+          kana: kanaValue,
+          date: `${selectedDate}T${selectedTime}:00`,
+          duration: 60,
+          details: `レッスン種別: ${lessonType}, 参加者数: ${participants}`
+        });
+        if (emailSent) setStep(3);
+      } else if (data.clientSecret) {
         setClientSecret(data.clientSecret);
         setStep(2);
       } else {
@@ -252,6 +341,24 @@ export default function BookLessonPage() {
     } finally {
       setFormLoading(false);
     }
+  }
+
+  // After successful payment, send booking email and go to confirmation
+  async function handlePaymentSuccess() {
+    const nameValue = Cookies.get("booking_name") || "";
+    const emailValue = Cookies.get("booking_email") || "";
+    const kanaValue = (document.getElementsByName("kana")[0] as HTMLInputElement)?.value || "";
+    const dateValue = Cookies.get("booking_date") || "";
+    const timeValue = Cookies.get("booking_time") || "";
+    const emailSent = await sendBookingEmail({
+      name: nameValue,
+      email: emailValue,
+      kana: kanaValue,
+      date: `${dateValue}T${timeValue}:00`,
+      duration: 60,
+      details: `レッスン種別: ${lessonType}, 参加者数: ${participants}`
+    });
+    if (emailSent) setStep(3);
   }
 
   // Progress bar component
@@ -367,16 +474,13 @@ export default function BookLessonPage() {
     );
   }
 
-  // Helper: Calculate price
-  function getLessonPrice() {
-    if (!lessonType) return 0;
-    const base = lessonType === "in-person" ? 3000 : lessonType === "online" ? 2500 : 0;
-    if (lessonType === "in-person") {
-      return base + (participants - 1) * 1000;
-    } else if (lessonType === "online") {
-      return base + (participants - 1) * 500;
-    }
-    return base;
+  // Move this after all hooks
+  if (isLoading) {
+    return (
+      <main className="flex flex-col flex-1 min-w-0 w-full min-h-[100vh] pt-20">
+        <div className="text-2xl text-gray-400">ロード中...</div>
+      </main>
+    );
   }
 
   return (
@@ -390,8 +494,9 @@ export default function BookLessonPage() {
           {/* Price display, always visible */}
           <div className="w-full flex flex-col items-center mb-3">
             <div className="text-lg font-bold text-gray-200 flex flex-row items-center gap-4">
-              <span>合計金額(税込み): <span className="text-[#3881ff] text-2xl font-extrabold">{getLessonPrice().toLocaleString()}円</span></span>
+              <span>合計金額(税込み): <span className="text-[#3881ff] text-2xl font-extrabold">{priceLoading ? "..." : finalPrice !== null ? finalPrice.toLocaleString() : getLessonPrice().toLocaleString()}円</span></span>
             </div>
+            {priceError && <div className="text-red-400 text-sm font-bold">{priceError}</div>}
             <div className="text-sm text-gray-400 mt-2 sm:mt-0 flex flex-row items-center">(参加者数: {participants}名)</div>
           </div>
           <ProgressBar step={step} />
@@ -415,10 +520,7 @@ export default function BookLessonPage() {
             </div>
           )}
           {step === 1 && lessonType !== "" && (
-            <form className="bg-[#18181b] p-8 rounded-2xl shadow-xl w-full border-2 border-[#3881ff] flex flex-col gap-6 max-w-lg mx-auto min-h-0 min-w-0" onSubmit={async (e) => {
-              await handleSubmit(e);
-              setStep(2);
-            }}>
+            <form className="bg-[#18181b] p-8 rounded-2xl shadow-xl w-full border-2 border-[#3881ff] flex flex-col gap-6 max-w-lg mx-auto min-h-0 min-w-0" onSubmit={handleSubmit}>
               <input type="hidden" name="lessonType" value={lessonType} />
               {/* Name and Kana Name inputs: stacked on mobile, side by side on desktop */}
               <div className="flex flex-col sm:flex-row gap-4">
@@ -523,9 +625,36 @@ export default function BookLessonPage() {
                   </select>
                 </div>
               </div>
+              {/* Coupon input with submit button */}
+              <div className="flex flex-col gap-2">
+                <label htmlFor="coupon" className="block text-gray-200 text-base font-bold text-left">クーポンコード (任意)</label>
+                <div className="flex flex-row gap-2 items-center">
+                  <input
+                    id="coupon"
+                    name="coupon"
+                    type="text"
+                    placeholder="クーポン"
+                    value={coupon}
+                    onChange={e => setCoupon(e.target.value)}
+                    className="w-full p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 text-base focus:outline-none focus:ring-2 focus:ring-[#3881ff]"
+                  />
+                  <button
+                    type="button"
+                    className="px-4 py-3 min-w-35 rounded bg-[#3881ff] text-white font-bold text-sm border border-[#3881ff] hover:bg-[#3881ff] hover:text-white transition-all"
+                    onClick={() => setCouponConfirmed(true)}
+                    disabled={priceLoading || !coupon || couponConfirmed}
+                  >
+                    {couponConfirmed ? "適用済み" : "クーポンを適用"}
+                  </button>
+                </div>
+              </div>
               {formError && <div className="text-red-400 font-bold">{formError}</div>}
               <button type="submit" className="px-8 py-3 rounded-xl bg-[#3881ff] text-white font-extrabold text-lg shadow-lg hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-[#3881ff]/50" disabled={formLoading}>
-                {formLoading ? "ロード中..." : "支払いへ進む"}
+                {formLoading
+                  ? "ロード中..."
+                  : finalPrice === 0
+                  ? "予約確定"
+                  : "支払いへ進む"}
               </button>
               <button type="button" className="mt-2 text-[#3881ff] underline text-sm" onClick={() => setLessonType("")}>戻る</button>
             </form>
@@ -555,7 +684,7 @@ export default function BookLessonPage() {
               >
                 <StripePaymentForm
                   clientSecret={clientSecret}
-                  onSuccess={() => setStep(3)}
+                  onSuccess={handlePaymentSuccess}
                   onError={msg => setFormError(msg)}
                 />
               </Elements>
