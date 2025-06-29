@@ -162,10 +162,15 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
             </section>
           )}
         </main>
-        {/* Footer with contact email */}
-        <footer className="w-full px-6 pb-4 bg-transparent text-gray-400 text-sm flex flex-row items-center justify-end pointer-events-auto">
-          <span className="mr-1">メール:</span>
-          <a href="mailto:lucaswilsoncontact@gmail.com" className="text-[#3881ff] hover:underline">lucaswilsoncontact@gmail.com</a>
+        {/* Footer with contact email and legal link */}
+        <footer className="w-full px-6 pb-4 bg-transparent text-gray-400 text-sm flex flex-col sm:flex-row items-center sm:items-center justify-between pointer-events-auto">
+          <div className="flex flex-row items-center gap-4 order-2 sm:order-1 mt-2 sm:mt-0">
+            <Link href="/tokutei-shouhiki-hou" className="text-[#3881ff] hover:underline">特定商取引法に基づく表記</Link>
+          </div>
+          <div className="flex flex-row items-center order-1 sm:order-2">
+            <span className="mr-1">メール:</span>
+            <a href="mailto:lucaswilsoncontact@gmail.com" className="text-[#3881ff] hover:underline">luke@eigotankentai.com</a>
+          </div>
         </footer>
       </div>
     );
