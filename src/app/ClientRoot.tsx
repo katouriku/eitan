@@ -75,7 +75,7 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
     return (
       <div className="min-h-screen w-full flex flex-col bg-[#18181b]">
         <header
-          className="w-full px-6 py-2 bg-transparent fixed top-0 left-0 right-0 z-40 flex flex-col items-center sm:flex-row sm:justify-between sm:items-center"
+          className="w-full px-6 pt-2 md:pt-1 bg-transparent fixed top-0 left-0 right-0 z-40 flex flex-col items-center sm:flex-row sm:justify-between sm:items-center"
           style={{ backgroundColor: "rgba(24,24,27,0.85)" }}
         >
           {/* Hamburger: mobile only, absolutely positioned */}
