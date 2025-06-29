@@ -15,8 +15,8 @@ console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY ? '[set]' : '[not set]
 
 export async function POST(req: NextRequest) {
   console.log('POST handler called');
-  const { name, email, date, duration, details, lessonType, participants, coupon, regularPrice, discountAmount, finalPrice } = await req.json();
-  console.log('Booking request:', { name, email, date, duration, details, lessonType, participants, coupon, regularPrice, discountAmount, finalPrice });
+  const { name, kana, email, date, duration, details, lessonType, participants, coupon, regularPrice, discountAmount, finalPrice } = await req.json();
+  console.log('Booking request:', { name, kana, email, date, duration, details, lessonType, participants, coupon, regularPrice, discountAmount, finalPrice });
   const start = new Date(date);
   const end = new Date(start.getTime() + (duration || 60) * 60000); // default 60 min
 
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
       from: 'luke@eigotankentai.com',
       to: 'luke@eigotankentai.com',
       subject: 'New Booking',
-      html: `<p>New booking from ${name} (${email}) on ${start.toLocaleString()}</p>
+      html: `<p>New booking from <strong>${name} (${kana})</strong> &lt;${email}&gt; on ${start.toLocaleString()}</p>
       <hr style="margin:24px 0;">
       <div style="font-size:15px;line-height:1.7;">
         <strong>ご予約内容:</strong><br>
