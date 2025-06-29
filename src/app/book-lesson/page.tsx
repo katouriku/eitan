@@ -274,13 +274,38 @@ export default function BookLessonPage() {
 
   // Only send booking email after payment or free booking is confirmed
   async function sendBookingEmail({ name, email, kana, date, duration, details }: { name: string, email: string, kana: string, date: string, duration: number, details: string }) {
+    // Calculate price breakdown for email
+    const lessonTypeValue = lessonType;
+    const participantsValue = participants;
+    let regularPrice = 0;
+    if (lessonTypeValue === "in-person") {
+      regularPrice = 3000 + (participantsValue - 1) * 1000;
+    } else if (lessonTypeValue === "online") {
+      regularPrice = 2500 + (participantsValue - 1) * 500;
+    }
+    const couponValue = couponConfirmed ? coupon : undefined;
+    const computedFinalPrice = finalPrice !== null ? finalPrice : regularPrice;
+    const discountAmount = couponConfirmed && regularPrice > computedFinalPrice ? regularPrice - computedFinalPrice : 0;
     try {
       const bookingRes = await fetch("/api/book-lesson", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ name, email, kana, date, duration, details }),
+        body: JSON.stringify({
+          name,
+          email,
+          kana,
+          date,
+          duration,
+          details,
+          lessonType: lessonTypeValue,
+          participants: participantsValue,
+          coupon: couponValue,
+          regularPrice,
+          discountAmount,
+          finalPrice: computedFinalPrice,
+        }),
       });
       const bookingData = await bookingRes.json();
       if (!bookingData.ok) {
@@ -494,7 +519,7 @@ export default function BookLessonPage() {
           {/* Price display, always visible */}
           <div className="w-full flex flex-col items-center mb-3">
             <div className="text-lg font-bold text-gray-200 flex flex-row items-center gap-4">
-              <span>合計金額(税込み): <span className="text-[#3881ff] text-2xl font-extrabold">{priceLoading ? "..." : finalPrice !== null ? finalPrice.toLocaleString() : getLessonPrice().toLocaleString()}円</span></span>
+              <span>合計金額(税込み): <span className="text-[#3881ff] text-2xl font-extrabold">{priceLoading ? "..." : finalPrice !== null ? (finalPrice === 0 ? "無料" : finalPrice.toLocaleString() + "円") : (getLessonPrice() === 0 ? "無料" : getLessonPrice().toLocaleString() + "円")}</span></span>
             </div>
             {priceError && <div className="text-red-400 text-sm font-bold">{priceError}</div>}
             <div className="text-sm text-gray-400 mt-2 sm:mt-0 flex flex-row items-center">(参加者数: {participants}名)</div>

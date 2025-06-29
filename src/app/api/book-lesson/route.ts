@@ -15,8 +15,8 @@ console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY ? '[set]' : '[not set]
 
 export async function POST(req: NextRequest) {
   console.log('POST handler called');
-  const { name, email, date, duration, details } = await req.json();
-  console.log('Booking request:', { name, email, date, duration, details });
+  const { name, email, date, duration, details, lessonType, participants, coupon, regularPrice, discountAmount, finalPrice } = await req.json();
+  console.log('Booking request:', { name, email, date, duration, details, lessonType, participants, coupon, regularPrice, discountAmount, finalPrice });
   const start = new Date(date);
   const end = new Date(start.getTime() + (duration || 60) * 60000); // default 60 min
 
@@ -32,6 +32,16 @@ export async function POST(req: NextRequest) {
     start: start.toISOString(),
     end: end.toISOString(),
   });
+
+  // Compose price breakdown for email
+  let priceBreakdown = `<ul style='font-size:15px;line-height:1.7;padding-left:1em;'>`;
+  priceBreakdown += `<li>通常料金: <strong>${regularPrice?.toLocaleString?.() ?? regularPrice}円</strong></li>`;
+  if (coupon && discountAmount) {
+    priceBreakdown += `<li>クーポン (${coupon}): -${discountAmount?.toLocaleString?.() ?? discountAmount}円</li>`;
+  }
+  priceBreakdown += `<li>合計金額: <strong>${finalPrice === 0 ? '無料' : (finalPrice?.toLocaleString?.() ?? finalPrice) + '円'}</strong></li>`;
+  priceBreakdown += `<li>参加者数: <strong>${participants}名</strong></li>`;
+  priceBreakdown += `</ul>`;
 
   try {
     // Send confirmation to user (with BCC to you)
@@ -53,6 +63,8 @@ export async function POST(req: NextRequest) {
           <p style="font-size: 16px; color: #555555; line-height: 1.6;">
             このたびはご予約いただきありがとうございます。<br>
             ご希望の日時でレッスンを承りました。<br><br>
+            <strong>ご予約内容:</strong><br>
+            ${priceBreakdown}
             ご不明な点がございましたら、いつでもお気軽にご連絡ください。
           </p>
 
@@ -88,6 +100,10 @@ export async function POST(req: NextRequest) {
       subject: 'New Booking',
       html: `<p>New booking from ${name} (${email}) on ${start.toLocaleString()}</p>
       <hr style="margin:24px 0;">
+      <div style="font-size:15px;line-height:1.7;">
+        <strong>ご予約内容:</strong><br>
+        ${priceBreakdown}
+      </div>
       <div style="display:flex;align-items:center;gap:12px;margin-top:16px;">
         <div style="font-size:15px;line-height:1.5;">
           <strong>青木ルーカス</strong><br/>
