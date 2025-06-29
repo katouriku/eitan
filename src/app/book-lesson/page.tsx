@@ -9,6 +9,7 @@ import { groq } from "next-sanity";
 import Cookies from "js-cookie";
 import "../globals.css";
 import { useStripe, useElements } from "@stripe/react-stripe-js";
+import { useQueryParam } from "./useQueryParam";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -83,10 +84,12 @@ export default function BookLessonPage() {
   const [weeklyAvailability, setWeeklyAvailability] = useState<WeeklyAvailability[]>([]);
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState<string>("");
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStepState] = useState<1 | 2 | 3>(1);
   const [lessonType, setLessonType] = useState<"online" | "in-person" | "">("");
   const [participants, setParticipants] = useState(1);
+  const [showParticipantWarning, setShowParticipantWarning] = useState(false);
   const paymentFormRef = useRef<HTMLDivElement>(null);
+  const lessonTypeParam = useQueryParam("lessonType");
 
   const isLoading = !weeklyAvailability || weeklyAvailability.length === 0;
 
@@ -116,6 +119,44 @@ export default function BookLessonPage() {
       Cookies.remove("booking_time");
     }
   }, [step]);
+
+  // If lessonType is provided in the query, set it and skip selection
+  useEffect(() => {
+    if (lessonTypeParam === "online" || lessonTypeParam === "in-person") {
+      setLessonType(lessonTypeParam);
+      setStep(1); // Always go to booking form step if param is present
+    }
+  }, [lessonTypeParam, lessonType]);
+
+  // Hide warning when participants is reduced
+  useEffect(() => {
+    if (participants < 5 && showParticipantWarning) {
+      setShowParticipantWarning(false);
+    }
+  }, [participants, showParticipantWarning]);
+
+  // Sync step with browser history
+  function setStep(newStep: 1 | 2 | 3) {
+    setStepState(newStep);
+    window.history.pushState({ step: newStep }, '', `?step=${newStep}`);
+  }
+
+  // On mount, set step from URL or history
+  useEffect(() => {
+    const urlStep = Number(new URL(window.location.href).searchParams.get('step'));
+    if (urlStep === 2 || urlStep === 3) {
+      setStepState(urlStep as 1 | 2 | 3);
+    }
+    // Listen for popstate
+    const onPopState = (e: PopStateEvent) => {
+      const s = e.state?.step;
+      if (s === 1 || s === 2 || s === 3) {
+        setStepState(s);
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
   if (isLoading) {
     return (
@@ -343,18 +384,18 @@ export default function BookLessonPage() {
       <section className="flex flex-col items-center justify-center w-full px-4">
         <div className="flex flex-col items-center justify-center max-w-2xl min-w-[340px] w-full order-2 md:order-none min-h-0">
           <span
-            className="font-extrabold text-3xl sm:text-4xl md:text-5xl text-[#3881ff] mb-8 text-center w-full"
-            style={{textShadow:'0 2px 12px rgba(56,129,255,0.10)'}}>
+            className="font-extrabold text-3xl sm:text-4xl md:text-5xl text-[#3881ff] mb-3 text-center w-full">
             レッスンを予約
           </span>
           {/* Price display, always visible */}
-          <div className="w-full flex flex-col items-center mb-4">
+          <div className="w-full flex flex-col items-center mb-3">
             <div className="text-lg font-bold text-gray-200 flex flex-row items-center gap-4">
               <span>合計金額(税込み): <span className="text-[#3881ff] text-2xl font-extrabold">{getLessonPrice().toLocaleString()}円</span></span>
             </div>
-            <div className="text-sm text-gray-400 mt-2 sm:mt-0 flex flex-row items-center">(参加者数: {participants}人)</div>
+            <div className="text-sm text-gray-400 mt-2 sm:mt-0 flex flex-row items-center">(参加者数: {participants}名)</div>
           </div>
           <ProgressBar step={step} />
+          {/* If lessonType is set from query, skip selection and go to step 1 form */}
           {step === 1 && lessonType === "" && (
             <div className="bg-[#18181b] p-8 rounded-2xl shadow-xl w-full border-2 border-[#3881ff] flex flex-col gap-6 max-w-lg mx-auto min-h-0 min-w-0 mb-8">
               <div className="text-lg text-gray-100 mb-4 text-center font-bold">レッスンの種類を選択してください</div>
@@ -379,50 +420,111 @@ export default function BookLessonPage() {
               setStep(2);
             }}>
               <input type="hidden" name="lessonType" value={lessonType} />
-              {/* Participants selector */}
-              <div className="flex flex-row items-center gap-4 mb-2">
-                <label className="text-gray-200 font-bold">参加者数</label>
-                <button type="button" className="px-3 py-1 rounded bg-[#23232a] text-[#3881ff] font-bold text-lg border border-[#3881ff] hover:bg-[#3881ff] hover:text-white transition-all" onClick={() => setParticipants(Math.max(1, participants - 1))}>-</button>
-                <span className="text-lg font-bold text-gray-100 w-8 text-center">{participants}</span>
-                <button type="button" className="px-3 py-1 rounded bg-[#23232a] text-[#3881ff] font-bold text-lg border border-[#3881ff] hover:bg-[#3881ff] hover:text-white transition-all" onClick={() => setParticipants(participants + 1)}>+</button>
+              {/* Name and Kana Name inputs: stacked on mobile, side by side on desktop */}
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1 flex flex-col">
+                  <label className="block text-gray-200 text-base font-bold text-left mb-2" htmlFor="name">お名前（漢字）</label>
+                  <input
+                    id="name"
+                    name="name"
+                    required
+                    placeholder="例: 山田 太郎"
+                    defaultValue={Cookies.get("booking_name") || ""}
+                    className="w-full p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 text-base focus:outline-none focus:ring-2 focus:ring-[#3881ff]"
+                  />
+                </div>
+                <div className="flex-1 flex flex-col">
+                  <label className="block text-gray-200 text-base font-bold text-left mb-2" htmlFor="kana">お名前（カナ）</label>
+                  <input
+                    id="kana"
+                    name="kana"
+                    required
+                    placeholder="例: ヤマダ タロウ"
+                    className="w-full p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 text-base focus:outline-none focus:ring-2 focus:ring-[#3881ff]"
+                  />
+                </div>
               </div>
-              <input type="hidden" name="participants" value={participants} />
-              <input name="name" required placeholder="お名前" defaultValue={Cookies.get("booking_name") || ""} className="p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#3881ff]" />
-              <input name="email" required type="email" placeholder="メールアドレス" defaultValue={Cookies.get("booking_email") || ""} className="p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#3881ff]" />
-              <div>
-                <label className="block text-gray-200 mb-2">予約日</label>
-                <select
-                  value={selectedDate}
-                  onChange={(e) => {
-                    setSelectedDate(e.target.value);
-                    setSelectedTime("");
-                  }}
-                  required
-                  className="w-full p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 mb-2 focus:outline-none focus:ring-2 focus:ring-[#3881ff]"
-                >
-                  <option value="">-- 日を選んでください --</option>
-                  {getAvailableDates().map((date) => (
-                    <option key={date} value={date}>{date}</option>
-                  ))}
-                </select>
+              {/* Email input and participants selector side by side on desktop, stacked on mobile */}
+              <div className="flex flex-col sm:flex-row gap-2 mb-2">
+                <div className="flex-1">
+                  <label htmlFor="email" className="block text-gray-200 text-base font-bold text-left mb-2">メールアドレス</label>
+                  <input
+                    id="email"
+                    name="email"
+                    required
+                    type="email"
+                    placeholder="例: your@email.com"
+                    defaultValue={Cookies.get("booking_email") || ""}
+                    className="p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 text-base focus:outline-none focus:ring-2 focus:ring-[#3881ff] w-full"
+                  />
+                </div>
+                {/* Participants selector */}
+                <div className="flex flex-col gap-1 min-w-[160px] sm:ml-2">
+                  <label className="text-gray-200 text-base font-bold mb-2">参加者数</label>
+                  <div className="flex flex-row items-center gap-2">
+                    <button
+                      type="button"
+                      className="px-4 py-2 rounded bg-[#23232a] text-[#3881ff] font-bold text-base border border-[#3881ff] hover:bg-[#3881ff] hover:text-white transition-all"
+                      onClick={() => setParticipants(Math.max(1, participants - 1))}
+                      aria-label="減らす"
+                    >-</button>
+                    <span className="text-lg font-bold text-gray-100 w-12 text-center">{participants}名</span>
+                    <button
+                      type="button"
+                      className="px-4 py-2 rounded bg-[#23232a] text-[#3881ff] font-bold text-base border border-[#3881ff] hover:bg-[#3881ff] hover:text-white transition-all"
+                      onClick={() => {
+                        if (participants < 5) {
+                          setParticipants(participants + 1);
+                        } else {
+                          setShowParticipantWarning(true);
+                        }
+                      }}
+                      aria-label="増やす"
+                    >+</button>
+                  </div>
+                  {showParticipantWarning && (
+                    <div className="text-yellow-400 text-sm font-bold mt-1">参加者は最大5名までです。</div>
+                  )}
+                  <input type="hidden" name="participants" value={participants} />
+                </div>
               </div>
-              <div>
-                <label className="block text-gray-200 mb-2">予約時間</label>
-                <select
-                  value={selectedTime}
-                  onChange={(e) => setSelectedTime(e.target.value)}
-                  required
-                  className="w-full p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#3881ff]"
-                  disabled={!selectedDate}
-                >
-                  <option value="">-- 時間を選んでください --</option>
-                  {getTimesForDate(selectedDate).map((time) => (
-                    <option key={time} value={time}>{time}</option>
-                  ))}
-                </select>
+              {/* Date and Time side by side on desktop, stacked on mobile */}
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                  <label className="block text-gray-200 font-bold mb-2">予約日</label>
+                  <select
+                    value={selectedDate}
+                    onChange={(e) => {
+                      setSelectedDate(e.target.value);
+                      setSelectedTime("");
+                    }}
+                    required
+                    className="w-full p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 mb-2 focus:outline-none focus:ring-2 focus:ring-[#3881ff]"
+                  >
+                    <option value="">-- 日を選んでください --</option>
+                    {getAvailableDates().map((date) => (
+                      <option key={date} value={date}>{date}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="block text-gray-200 font-bold mb-2">予約時間</label>
+                  <select
+                    value={selectedTime}
+                    onChange={(e) => setSelectedTime(e.target.value)}
+                    required
+                    className="w-full p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#3881ff]"
+                    disabled={!selectedDate}
+                  >
+                    <option value="">-- 時間を選んでください --</option>
+                    {getTimesForDate(selectedDate).map((time) => (
+                      <option key={time} value={time}>{time}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
               {formError && <div className="text-red-400 font-bold">{formError}</div>}
-              <button type="submit" className="mt-4 px-8 py-3 rounded-xl bg-[#3881ff] text-white font-extrabold text-lg shadow-lg hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-[#3881ff]/50" disabled={formLoading}>
+              <button type="submit" className="px-8 py-3 rounded-xl bg-[#3881ff] text-white font-extrabold text-lg shadow-lg hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-[#3881ff]/50" disabled={formLoading}>
                 {formLoading ? "ロード中..." : "支払いへ進む"}
               </button>
               <button type="button" className="mt-2 text-[#3881ff] underline text-sm" onClick={() => setLessonType("")}>戻る</button>
