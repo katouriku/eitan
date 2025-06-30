@@ -336,6 +336,9 @@ export default function BookLessonPage() {
     Cookies.set("booking_email", emailValue, { expires: 7 });
     Cookies.set("booking_date", selectedDate, { expires: 7 });
     Cookies.set("booking_time", selectedTime, { expires: 7 });
+    // Extract start time for ISO string
+    const startTime = selectedTime.split(" - ")[0];
+    const isoDate = new Date(`${selectedDate}T${startTime}:00`).toISOString();
     try {
       const res = await fetch("/api/create-payment-intent", {
         method: "POST",
@@ -349,7 +352,7 @@ export default function BookLessonPage() {
           name: nameValue,
           email: emailValue,
           kana: kanaValue,
-          date: `${selectedDate}T${selectedTime}:00`,
+          date: isoDate,
           duration: 60,
           details: `レッスン種別: ${lessonType}, 参加者数: ${participants}`
         });
@@ -374,11 +377,14 @@ export default function BookLessonPage() {
     const kanaValue = (document.getElementsByName("kana")[0] as HTMLInputElement)?.value || "";
     const dateValue = Cookies.get("booking_date") || "";
     const timeValue = Cookies.get("booking_time") || "";
+    // Extract start time for ISO string
+    const startTime = timeValue.split(" - ")[0];
+    const isoDate = new Date(`${dateValue}T${startTime}:00`).toISOString();
     const emailSent = await sendBookingEmail({
       name: nameValue,
       email: emailValue,
       kana: kanaValue,
-      date: `${dateValue}T${timeValue}:00`,
+      date: isoDate,
       duration: 60,
       details: `レッスン種別: ${lessonType}, 参加者数: ${participants}`
     });
