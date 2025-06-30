@@ -130,7 +130,7 @@ export default function BookLessonPage() {
       setFinalPrice(null);
       setPriceError(null);
     }
-  }, [lessonType, participants, couponConfirmed]);
+  }, [lessonType, participants, couponConfirmed, coupon]); // Added 'coupon' to dependencies
 
   // Reset coupon confirmation if coupon input changes
   useEffect(() => {
