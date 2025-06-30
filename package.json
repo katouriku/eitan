@@ -24,7 +24,8 @@
     "resend": "^4.6.0",
     "sanity": "^3.95.0",
     "stripe": "^18.2.1",
-    "styled-components": "^6.1.19"
+    "styled-components": "^6.1.19",
+    "prisma": "^6.10.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -35,7 +36,6 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.3.4",
-    "prisma": "^6.10.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
