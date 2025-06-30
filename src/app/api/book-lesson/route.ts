@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
         notes: details,
       },
     });
-  } catch (e: any) {
+  } catch (e) {
     if (e.code === 'P2002') {
       return NextResponse.json({ ok: false, error: 'Time slot already booked' }, { status: 409 });
     }
