@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -19,6 +20,29 @@ export async function POST(req: NextRequest) {
   console.log('Booking request:', { name, kana, email, date, duration, details, lessonType, participants, coupon, regularPrice, discountAmount, finalPrice });
   const start = new Date(date);
   const end = new Date(start.getTime() + (duration || 60) * 60000); // default 60 min
+
+  // Save booking to DB (with double-booking prevention)
+  try {
+    await prisma.booking.create({
+      data: {
+        date: start,
+        participantCount: participants,
+        customerName: name,
+        customerKana: kana,
+        customerEmail: email,
+        couponCode: coupon,
+        couponDiscount: discountAmount,
+        price: finalPrice,
+        status: 'paid', // or 'pending' if you want to handle payment status
+        notes: details,
+      },
+    });
+  } catch (e: any) {
+    if (e.code === 'P2002') {
+      return NextResponse.json({ ok: false, error: 'Time slot already booked' }, { status: 409 });
+    }
+    return NextResponse.json({ ok: false, error: e.message || 'Unknown error' }, { status: 500 });
+  }
 
   const icsContentUser = createICS({
     summary: 'レッスン＠エイタン',

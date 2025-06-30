@@ -4,12 +4,11 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { loadStripe } from "@stripe/stripe-js/pure";
 import { Elements } from "@stripe/react-stripe-js";
 import { PaymentElement } from "@stripe/react-stripe-js";
-import { client } from "@/sanity/lib/client";
-import { groq } from "next-sanity";
 import Cookies from "js-cookie";
 import "../globals.css";
 import { useStripe, useElements } from "@stripe/react-stripe-js";
 import { useQueryParam } from "./useQueryParam";
+import { useBookedSlots } from "./useBookedSlots";
 
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -146,8 +145,20 @@ export default function BookLessonPage() {
 
   useEffect(() => {
     async function fetchAvailability() {
-      const data = await client.fetch(groq`*[_type == "availability"][0]{weeklyAvailability}`);
-      setWeeklyAvailability(data?.weeklyAvailability || []);
+      try {
+        const res = await fetch('/api/availability');
+        if (!res.ok) {
+          console.error('API error:', res.status, await res.text());
+          setWeeklyAvailability([]);
+          return;
+        }
+        const data = await res.json();
+        console.log('API /api/availability response:', data);
+        setWeeklyAvailability(data.weeklyAvailability || []);
+      } catch (err) {
+        console.error('Fetch error:', err);
+        setWeeklyAvailability([]);
+      }
     }
     fetchAvailability();
   }, []);
@@ -236,6 +247,55 @@ export default function BookLessonPage() {
     return dates;
   }
 
+  // Helper: Check if a date is fully booked
+  function isDateFullyBooked(date: string) {
+    const d = new Date(date);
+    const weekday = d.getDay();
+    const avail = weeklyAvailability.find((a) => dayToIndex[a.day] === weekday);
+    if (!avail) return false;
+    let totalSlots = 0;
+    const slotStarts: string[] = [];
+    for (const range of avail.ranges) {
+      const [startHour] = range.start.split(":").map(Number);
+      const [endHour] = range.end.split(":").map(Number);
+      for (let hour = startHour; hour < endHour; hour++) {
+        const slotStart = hour.toString().padStart(2, '0') + ":00";
+        slotStarts.push(slotStart);
+        totalSlots++;
+      }
+    }
+    const booked = allBookedSlots[date] || [];
+    return slotStarts.every(slot => booked.includes(slot)) && totalSlots > 0;
+  }
+
+  // --- New: Fetch all booked slots for the next 30 days ---
+  const [allBookedSlots, setAllBookedSlots] = useState<Record<string, string[]>>({}); // { 'YYYY-MM-DD': ['HH:mm', ...] }
+  useEffect(() => {
+    async function fetchAllBooked() {
+      const today = new Date();
+      const start = today.toISOString().slice(0, 10);
+      const endDate = new Date(today);
+      endDate.setDate(today.getDate() + 29);
+      const end = endDate.toISOString().slice(0, 10);
+      const res = await fetch(`/api/booking?start=${start}&end=${end}`);
+      const data = await res.json();
+      // Group by date
+      const grouped: Record<string, string[]> = {};
+      if (Array.isArray(data.bookings)) {
+        for (const b of data.bookings) {
+          const d = new Date(b.date);
+          // Use local time for date and time string
+          const dateStr = d.getFullYear() + '-' + (d.getMonth() + 1).toString().padStart(2, '0') + '-' + d.getDate().toString().padStart(2, '0');
+          const timeStr = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+          if (!grouped[dateStr]) grouped[dateStr] = [];
+          grouped[dateStr].push(timeStr);
+        }
+      }
+      setAllBookedSlots(grouped);
+    }
+    fetchAllBooked();
+  }, []);
+
   // For a selected date, get all 1-hour slots from available ranges
   function getTimesForDate(date: string) {
     if (!date) return [];
@@ -246,14 +306,20 @@ export default function BookLessonPage() {
       return idx === weekday;
     });
     if (!avail) return [];
-    const slots: string[] = [];
+    const slots: { label: string, value: string, disabled: boolean }[] = [];
+    const booked = allBookedSlots[date] || [];
     for (const range of avail.ranges) {
       const [startHour] = range.start.split(":").map(Number);
       const [endHour] = range.end.split(":").map(Number);
       for (let hour = startHour; hour < endHour; hour++) {
         const slotStart = hour.toString().padStart(2, '0') + ":00";
         const slotEnd = (hour + 1).toString().padStart(2, '0') + ":00";
-        slots.push(`${slotStart} - ${slotEnd}`);
+        const isBooked = booked.includes(slotStart);
+        slots.push({
+          label: `${slotStart} - ${slotEnd}` + (isBooked ? '（予約済み）' : ''),
+          value: `${slotStart} - ${slotEnd}`,
+          disabled: isBooked
+        });
       }
     }
     return slots;
@@ -286,6 +352,7 @@ export default function BookLessonPage() {
     const computedFinalPrice = finalPrice !== null ? finalPrice : regularPrice;
     const discountAmount = couponConfirmed && regularPrice > computedFinalPrice ? regularPrice - computedFinalPrice : 0;
     try {
+      // Now POST to /api/book-lesson will save to DB and send email
       const bookingRes = await fetch("/api/book-lesson", {
         method: "POST",
         headers: {
@@ -308,12 +375,12 @@ export default function BookLessonPage() {
       });
       const bookingData = await bookingRes.json();
       if (!bookingData.ok) {
-        setFormError(bookingData.error || "メール送信に失敗しました。");
+        setFormError(bookingData.error || "予約に失敗しました。すでに予約済みの時間です。");
         return false;
       }
       return true;
     } catch {
-      setFormError("メール送信に失敗しました。");
+      setFormError("予約に失敗しました。サーバーエラー。");
       return false;
     }
   }
@@ -336,6 +403,14 @@ export default function BookLessonPage() {
     Cookies.set("booking_email", emailValue, { expires: 7 });
     Cookies.set("booking_date", selectedDate, { expires: 7 });
     Cookies.set("booking_time", selectedTime, { expires: 7 });
+
+    // --- Fix: Ensure 24-hour time is always sent ---
+    let time24 = selectedTime.split(' - ')[0];
+    // Normalize to HH:mm (24-hour, zero-padded)
+    if (/^\d{1}:/.test(time24)) {
+      time24 = time24.padStart(5, '0');
+    }
+
     try {
       const res = await fetch("/api/create-payment-intent", {
         method: "POST",
@@ -349,7 +424,7 @@ export default function BookLessonPage() {
           name: nameValue,
           email: emailValue,
           kana: kanaValue,
-          date: `${selectedDate}T${selectedTime}:00`,
+          date: `${selectedDate}T${time24}:00`,
           duration: 60,
           details: `レッスン種別: ${lessonType}, 参加者数: ${participants}`
         });
@@ -378,7 +453,7 @@ export default function BookLessonPage() {
       name: nameValue,
       email: emailValue,
       kana: kanaValue,
-      date: `${dateValue}T${timeValue}:00`,
+      date: `${dateValue}T${timeValue.split(' - ')[0]}:00`,
       duration: 60,
       details: `レッスン種別: ${lessonType}, 参加者数: ${participants}`
     });
@@ -626,15 +701,17 @@ export default function BookLessonPage() {
                     }}
                     required
                     className="w-full p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 mb-2 focus:outline-none focus:ring-2 focus:ring-[#3881ff]"
+                    style={{ color: selectedDate && getTimesForDate(selectedDate).length === 0 ? '#888' : undefined }}
                   >
                     <option value="">-- 日を選んでください --</option>
                     {getAvailableDates().map((date) => {
                       const d = new Date(date);
                       const weekday = d.getDay();
                       const weekdayNames = ["日", "月", "火", "水", "木", "金", "土"];
+                      const fullyBooked = isDateFullyBooked(date);
                       return (
-                        <option key={date} value={date}>
-                          {date}（{weekdayNames[weekday]}）
+                        <option key={date} value={date} disabled={fullyBooked} className={fullyBooked ? 'bg-[#23232a] text-gray-400' : ''} style={fullyBooked ? { color: '#888', backgroundColor: '#23232a', fontStyle: 'italic' } : {}}>
+                          {date}（{weekdayNames[weekday]}）{fullyBooked ? "（満席）" : ""}
                         </option>
                       );
                     })}
@@ -650,8 +727,13 @@ export default function BookLessonPage() {
                     disabled={!selectedDate}
                   >
                     <option value="">-- 時間を選んでください --</option>
-                    {getTimesForDate(selectedDate).map((time) => (
-                      <option key={time} value={time}>{time}</option>
+                    {selectedDate && getTimesForDate(selectedDate).length === 0 && (
+                      <option value="" disabled style={{ color: '#888' }}>この日は満席です</option>
+                    )}
+                    {getTimesForDate(selectedDate).map((slot) => (
+                      <option key={slot.value} value={slot.value} disabled={slot.disabled} style={slot.disabled ? { color: '#888', fontStyle: 'italic' } : {}}>
+                        {slot.label}
+                      </option>
                     ))}
                   </select>
                 </div>
