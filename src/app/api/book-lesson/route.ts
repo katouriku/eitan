@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { BookingService } from '@/lib/supabase';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -118,6 +119,34 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error('Error sending admin notification email:', err);
     // Don't fail the whole request if admin notification fails
+  }
+
+  // Store booking in database
+  try {
+    const bookingData = {
+      name,
+      kana,
+      email,
+      date: start.toISOString(),
+      duration: duration || 60,
+      details: details || '',
+      lesson_type: lessonType as 'online' | 'in-person',
+      participants: participants || 1,
+      coupon: coupon || undefined,
+      regular_price: regularPrice || 0,
+      discount_amount: discountAmount || 0,
+      final_price: finalPrice || 0
+    }
+    
+    console.log('Attempting to save booking with data:', bookingData)
+    const savedBooking = await BookingService.createBooking(bookingData)
+    console.log('Booking saved to database successfully:', savedBooking.id)
+  } catch (err) {
+    console.error('Error saving booking to database:', {
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined
+    })
+    // Don't fail the request if database save fails, since emails were sent
   }
 
   return NextResponse.json({ ok: true });

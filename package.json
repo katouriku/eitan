@@ -15,6 +15,7 @@
     "@sanity/vision": "^3.95.0",
     "@stripe/react-stripe-js": "^3.7.0",
     "@stripe/stripe-js": "^7.4.0",
+    "@supabase/supabase-js": "^2.50.2",
     "googleapis": "^150.0.1",
     "js-cookie": "^3.0.5",
     "next": "15.3.4",
