@@ -156,10 +156,9 @@ export default function BookLessonPage() {
     const grouped: Record<string, string[]> = {};
     if (Array.isArray(data.bookings)) {
       for (const b of data.bookings) {
-        const d = new Date(b.date);
-        // Use local time for date and time string
-        const dateStr = d.getFullYear() + '-' + (d.getMonth() + 1).toString().padStart(2, '0') + '-' + d.getDate().toString().padStart(2, '0');
-        const timeStr = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+        // Parse the UTC date string directly without timezone conversion
+        const dateStr = b.date.slice(0, 10); // Extract YYYY-MM-DD from "2025-07-03T14:00:00+00:00"
+        const timeStr = b.date.slice(11, 16); // Extract HH:MM from "2025-07-03T14:00:00+00:00"
         if (!grouped[dateStr]) grouped[dateStr] = [];
         grouped[dateStr].push(timeStr);
       }
