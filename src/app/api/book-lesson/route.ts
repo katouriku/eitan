@@ -34,7 +34,6 @@ export async function POST(req: NextRequest) {
     end: end.toISOString(),
   });
 
-  // Compose price breakdown for email
   let priceBreakdown = `<ul style='font-size:15px;line-height:1.7;padding-left:1em;'>`;
   priceBreakdown += `<li>通常料金: <strong>${regularPrice?.toLocaleString?.() ?? regularPrice}円</strong></li>`;
   if (coupon && discountAmount) {
