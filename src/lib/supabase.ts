@@ -57,8 +57,55 @@ export interface Availability {
 
 // Booking operations
 export class BookingService {
+  // Check if a time slot is already booked
+  static async checkDoubleBooking(date: string, duration: number = 60) {
+    const bookingStart = new Date(date)
+    const bookingEnd = new Date(bookingStart.getTime() + duration * 60000)
+    
+    // Get all bookings for the same date (more efficient than time range query)
+    const dateStr = bookingStart.toISOString().split('T')[0] // YYYY-MM-DD
+    const startOfDay = `${dateStr}T00:00:00.000Z`
+    const endOfDay = `${dateStr}T23:59:59.999Z`
+    
+    const { data: existingBookings, error } = await supabase
+      .from('bookings')
+      .select('date, duration')
+      .gte('date', startOfDay)
+      .lte('date', endOfDay)
+    
+    if (error) {
+      console.error('Error checking for double booking:', error)
+      throw new Error(`Failed to check for conflicts: ${error.message}`)
+    }
+    
+    // Check if any existing booking conflicts with the new booking
+    for (const booking of existingBookings || []) {
+      const existingStart = new Date(booking.date)
+      const existingEnd = new Date(existingStart.getTime() + booking.duration * 60000)
+      
+      // Check for overlap: new booking starts before existing ends AND new booking ends after existing starts
+      const hasOverlap = bookingStart < existingEnd && bookingEnd > existingStart
+      
+      if (hasOverlap) {
+        return {
+          hasConflict: true,
+          conflictingBooking: {
+            date: booking.date,
+            duration: booking.duration
+          }
+        }
+      }
+    }
+    
+    return { hasConflict: false }
+  }
+
   static async createBooking(bookingData: Omit<Booking, 'id' | 'created_at' | 'updated_at'>) {
-    console.log('Attempting to create booking:', bookingData)
+    // Check for double booking first
+    const conflictCheck = await this.checkDoubleBooking(bookingData.date, bookingData.duration)
+    if (conflictCheck.hasConflict) {
+      throw new Error(`Time slot is already booked. Please choose a different time.`)
+    }
     
     const { data, error } = await supabaseAdmin
       .from('bookings')
@@ -67,16 +114,10 @@ export class BookingService {
       .single()
     
     if (error) {
-      console.error('Error creating booking:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      })
-      throw new Error(`Failed to create booking: ${error.message} (Code: ${error.code})`)
+      console.error('Error creating booking:', error.message)
+      throw new Error(`Failed to create booking: ${error.message}`)
     }
     
-    console.log('Booking created successfully:', data)
     return data
   }
   

@@ -4,19 +4,17 @@ import { BookingService } from '@/lib/supabase';
 // GET: Fetch bookings for a given date (YYYY-MM-DD) or range (start, end)
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const date = searchParams.get('date'); // Expecting 'YYYY-MM-DD'
+  const date = searchParams.get('date');
   const startParam = searchParams.get('start');
   const endParam = searchParams.get('end');
 
   try {
     if (date) {
       // Get all bookings for the day
-      console.log('Booking API: Querying for date', date);
       const startDate = `${date}T00:00:00Z`;
       const endDate = `${date}T23:59:59Z`;
       
       const bookings = await BookingService.getBookingsByDateRange(startDate, endDate);
-      console.log('Booking API: Found bookings', bookings.length);
       
       // Return in the format expected by the frontend
       const formattedBookings = bookings.map(booking => ({
@@ -28,12 +26,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ bookings: formattedBookings });
     } else if (startParam && endParam) {
       // Get all bookings in the range
-      console.log('Booking API: Querying for range', startParam, endParam);
       const startDate = `${startParam}T00:00:00Z`;
       const endDate = `${endParam}T23:59:59Z`;
       
       const bookings = await BookingService.getBookingsByDateRange(startDate, endDate);
-      console.log('Booking API: Found bookings', bookings.length);
       
       const formattedBookings = bookings.map(booking => ({
         date: booking.date,

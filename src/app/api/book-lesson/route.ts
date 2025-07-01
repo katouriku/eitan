@@ -12,14 +12,10 @@ function formatICSDate(date: Date) {
   return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
 }
 
-console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY ? '[set]' : '[not set]');
-
 export async function POST(req: NextRequest) {
-  console.log('POST handler called');
   const { name, kana, email, date, duration, details, lessonType, participants, coupon, regularPrice, discountAmount, finalPrice } = await req.json();
-  console.log('Booking request:', { name, kana, email, date, duration, details, lessonType, participants, coupon, regularPrice, discountAmount, finalPrice });
   const start = new Date(date);
-  const end = new Date(start.getTime() + (duration || 60) * 60000); // default 60 min
+  const end = new Date(start.getTime() + (duration || 60) * 60000);
 
   const icsContentUser = createICS({
     summary: 'レッスン＠エイタン',
@@ -43,7 +39,32 @@ export async function POST(req: NextRequest) {
   priceBreakdown += `<li>参加者数: <strong>${participants}名</strong></li>`;
   priceBreakdown += `</ul>`;
 
+  // Prepare booking data
+  const bookingData = {
+    name,
+    kana,
+    email,
+    date: start.toISOString(),
+    duration: duration || 60,
+    details: details || '',
+    lesson_type: lessonType as 'online' | 'in-person',
+    participants: participants || 1,
+    coupon: coupon || undefined,
+    regular_price: regularPrice || 0,
+    discount_amount: discountAmount || 0,
+    final_price: finalPrice || 0
+  }
+
   try {
+    // Check for double booking before sending any emails
+    const conflictCheck = await BookingService.checkDoubleBooking(bookingData.date, bookingData.duration)
+    if (conflictCheck.hasConflict) {
+      return NextResponse.json({ 
+        error: 'このお時間は既に予約済みです。別のお時間をお選びください。',
+        errorCode: 'DOUBLE_BOOKING'
+      }, { status: 409 })
+    }
+
     // Send confirmation to user (with BCC to you)
     await resend.emails.send({
       from: 'luke@eigotankentai.com',
@@ -123,30 +144,23 @@ export async function POST(req: NextRequest) {
 
   // Store booking in database
   try {
-    const bookingData = {
-      name,
-      kana,
-      email,
-      date: start.toISOString(),
-      duration: duration || 60,
-      details: details || '',
-      lesson_type: lessonType as 'online' | 'in-person',
-      participants: participants || 1,
-      coupon: coupon || undefined,
-      regular_price: regularPrice || 0,
-      discount_amount: discountAmount || 0,
-      final_price: finalPrice || 0
+    await BookingService.createBooking(bookingData)
+  } catch (err) {
+    console.error('Error saving booking to database:', err instanceof Error ? err.message : String(err))
+    
+    // If this is a double booking error, return a proper error response
+    if (err instanceof Error && err.message.includes('Time slot is already booked')) {
+      return NextResponse.json({ 
+        error: 'このお時間は既に予約済みです。別のお時間をお選びください。',
+        errorCode: 'DOUBLE_BOOKING'
+      }, { status: 409 })
     }
     
-    console.log('Attempting to save booking with data:', bookingData)
-    const savedBooking = await BookingService.createBooking(bookingData)
-    console.log('Booking saved to database successfully:', savedBooking.id)
-  } catch (err) {
-    console.error('Error saving booking to database:', {
-      message: err instanceof Error ? err.message : String(err),
-      stack: err instanceof Error ? err.stack : undefined
-    })
-    // Don't fail the request if database save fails, since emails were sent
+    // For other database errors, still fail the request since this is critical
+    return NextResponse.json({ 
+      error: 'ご予約の保存中にエラーが発生しました。もう一度お試しください。',
+      errorCode: 'DATABASE_ERROR'
+    }, { status: 500 })
   }
 
   return NextResponse.json({ ok: true });

@@ -140,6 +140,33 @@ export default function BookLessonPage() {
 
   const isLoading = !weeklyAvailability || weeklyAvailability.length === 0;
 
+  // --- New: Fetch all booked slots for the next 30 days ---
+  const [allBookedSlots, setAllBookedSlots] = useState<Record<string, string[]>>({}); // { 'YYYY-MM-DD': ['HH:mm', ...] }
+
+  // Function to refresh booked slots after a successful booking
+  const refreshBookedSlots = useCallback(async () => {
+    const today = new Date();
+    const start = today.toISOString().slice(0, 10);
+    const endDate = new Date(today);
+    endDate.setDate(today.getDate() + 29);
+    const end = endDate.toISOString().slice(0, 10);
+    const res = await fetch(`/api/booking?start=${start}&end=${end}`);
+    const data = await res.json();
+    // Group by date
+    const grouped: Record<string, string[]> = {};
+    if (Array.isArray(data.bookings)) {
+      for (const b of data.bookings) {
+        const d = new Date(b.date);
+        // Use local time for date and time string
+        const dateStr = d.getFullYear() + '-' + (d.getMonth() + 1).toString().padStart(2, '0') + '-' + d.getDate().toString().padStart(2, '0');
+        const timeStr = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+        if (!grouped[dateStr]) grouped[dateStr] = [];
+        grouped[dateStr].push(timeStr);
+      }
+    }
+    setAllBookedSlots(grouped);
+  }, []);
+
   useEffect(() => {
     async function fetchAvailability() {
       try {
@@ -150,7 +177,6 @@ export default function BookLessonPage() {
           return;
         }
         const data = await res.json();
-        console.log('API /api/availability response:', data);
         setWeeklyAvailability(data.weeklyAvailability || []);
       } catch (err) {
         console.error('Fetch error:', err);
@@ -158,7 +184,9 @@ export default function BookLessonPage() {
       }
     }
     fetchAvailability();
-  }, []);
+    // Also fetch booked slots on mount
+    refreshBookedSlots();
+  }, [refreshBookedSlots]);
 
   // Try to load from cookies on mount
   useEffect(() => {
@@ -265,33 +293,6 @@ export default function BookLessonPage() {
     return slotStarts.every(slot => booked.includes(slot)) && totalSlots > 0;
   }
 
-  // --- New: Fetch all booked slots for the next 30 days ---
-  const [allBookedSlots, setAllBookedSlots] = useState<Record<string, string[]>>({}); // { 'YYYY-MM-DD': ['HH:mm', ...] }
-
-  // Function to refresh booked slots after a successful booking
-  const refreshBookedSlots = useCallback(async () => {
-    const today = new Date();
-    const start = today.toISOString().slice(0, 10);
-    const endDate = new Date(today);
-    endDate.setDate(today.getDate() + 29);
-    const end = endDate.toISOString().slice(0, 10);
-    const res = await fetch(`/api/booking?start=${start}&end=${end}`);
-    const data = await res.json();
-    // Group by date
-    const grouped: Record<string, string[]> = {};
-    if (Array.isArray(data.bookings)) {
-      for (const b of data.bookings) {
-        const d = new Date(b.date);
-        // Use local time for date and time string
-        const dateStr = d.getFullYear() + '-' + (d.getMonth() + 1).toString().padStart(2, '0') + '-' + d.getDate().toString().padStart(2, '0');
-        const timeStr = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
-        if (!grouped[dateStr]) grouped[dateStr] = [];
-        grouped[dateStr].push(timeStr);
-      }
-    }
-    setAllBookedSlots(grouped);
-  }, []);
-
   // For a selected date, get all 1-hour slots from available ranges
   function getTimesForDate(date: string) {
     if (!date) return [];
@@ -319,6 +320,17 @@ export default function BookLessonPage() {
       }
     }
     return slots;
+  }
+
+  // Helper function to format price display
+  const formatPrice = (price: number) => {
+    return price === 0 ? "無料" : price.toLocaleString() + "円"
+  }
+
+  const getDisplayPrice = () => {
+    if (priceLoading) return "..."
+    if (finalPrice !== null) return formatPrice(finalPrice)
+    return formatPrice(getLessonPrice())
   }
 
   // All hooks must be at the top level
@@ -596,7 +608,7 @@ export default function BookLessonPage() {
           {/* Price display, always visible */}
           <div className="w-full flex flex-col items-center mb-3">
             <div className="text-lg font-bold text-gray-200 flex flex-row items-center gap-4">
-              <span>合計金額(税込み): <span className="text-[#3881ff] text-2xl font-extrabold">{priceLoading ? "..." : finalPrice !== null ? (finalPrice === 0 ? "無料" : finalPrice.toLocaleString() + "円") : (getLessonPrice() === 0 ? "無料" : getLessonPrice().toLocaleString() + "円")}</span></span>
+              <span>合計金額(税込み): <span className="text-[#3881ff] text-2xl font-extrabold">{getDisplayPrice()}</span></span>
             </div>
             {priceError && <div className="text-red-400 text-sm font-bold">{priceError}</div>}
             <div className="text-sm text-gray-400 mt-2 sm:mt-0 flex flex-row items-center">(参加者数: {participants}名)</div>
