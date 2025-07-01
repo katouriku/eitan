@@ -237,7 +237,7 @@ export default function BookLessonPage() {
       d.setDate(today.getDate() + i);
       const weekday = d.getDay();
       // Find if this weekday is available
-      if (weeklyAvailability.some((a) => dayToIndex[a.day] === weekday)) {
+      if (weeklyAvailability.some((a) => dayToIndex[a.day.toLowerCase()] === weekday)) {
         dates.push(d.toISOString().slice(0, 10)); // YYYY-MM-DD
       }
     }
@@ -248,7 +248,7 @@ export default function BookLessonPage() {
   function isDateFullyBooked(date: string) {
     const d = new Date(date);
     const weekday = d.getDay();
-    const avail = weeklyAvailability.find((a) => dayToIndex[a.day] === weekday);
+    const avail = weeklyAvailability.find((a) => dayToIndex[a.day.toLowerCase()] === weekday);
     if (!avail) return false;
     let totalSlots = 0;
     const slotStarts: string[] = [];
@@ -298,7 +298,7 @@ export default function BookLessonPage() {
     const d = new Date(date);
     const weekday = d.getDay();
     const avail = weeklyAvailability.find((a) => {
-      const idx = dayToIndex[a.day];
+      const idx = dayToIndex[a.day.toLowerCase()];
       return idx === weekday;
     });
     if (!avail) return [];
