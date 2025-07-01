@@ -7,13 +7,19 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import "./globals.css";
 
-// Add: Hamburger menu state
+// Hamburger menu icon component
 function HamburgerIcon({ open }: { open: boolean }) {
   return (
-    <div className="flex flex-col justify-center items-center w-8 h-8">
-      <span className={`block h-1 w-6 bg-[#3881ff] rounded transition-all duration-200 ${open ? "rotate-45 translate-y-2" : ""}`}></span>
-      <span className={`block h-1 w-6 bg-[#3881ff] rounded my-1 transition-all duration-200 ${open ? "opacity-0" : ""}`}></span>
-      <span className={`block h-1 w-6 bg-[#3881ff] rounded transition-all duration-200 ${open ? "-rotate-45 -translate-y-2" : ""}`}></span>
+    <div className="flex flex-col justify-center items-center w-6 h-6">
+      <span className={`block h-0.5 w-5 bg-[#3881ff] rounded transition-all duration-200 ease-in-out ${
+        open ? "rotate-45 translate-y-1.5" : ""
+      }`} />
+      <span className={`block h-0.5 w-5 bg-[#3881ff] rounded my-1 transition-all duration-200 ease-in-out ${
+        open ? "opacity-0" : ""
+      }`} />
+      <span className={`block h-0.5 w-5 bg-[#3881ff] rounded transition-all duration-200 ease-in-out ${
+        open ? "-rotate-45 -translate-y-1.5" : ""
+      }`} />
     </div>
   );
 }
@@ -25,6 +31,7 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
     { label: "方法", href: "/method" },
     { label: "料金", href: "/pricing" },
     { label: "私について", href: "/about-me" },
+    { label: "お問い合わせ", href: "/contact" },
   ]);
   const pathname = usePathname();
   const isStudio = pathname.startsWith("/studio");
@@ -74,102 +81,116 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
   if (!isStudio) {
     return (
       <div className="min-h-screen w-full flex flex-col bg-[#18181b]">
-        <header
-          className="w-full px-6 pt-2 md:pt-1 bg-transparent fixed top-0 left-0 right-0 z-40 flex flex-col items-center sm:flex-row sm:justify-between sm:items-center"
-          style={{ backgroundColor: "rgba(24,24,27,0.85)" }}
-        >
-          {/* Hamburger: mobile only, absolutely positioned */}
-          <button
-            className="sm:hidden flex items-center justify-center absolute left-6 top-1/2 -translate-y-1/2"
-            aria-label="Open menu"
-            onClick={() => setMenuOpen(true)}
-            type="button"
-          >
-            <HamburgerIcon open={false} />
-          </button>
-          <h1 className="text-4xl xs:text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-center select-none m-0 mb-2 flex flex-wrap items-center justify-center gap-x-2 w-full sm:w-auto sm:mb-0">
-            <Link href="/"><span className="text-[#3881ff]" style={{textShadow:'0 2px 12px rgba(56,129,255,0.10)'}}>{homepage.mainTitle}</span></Link>
-          </h1>
-          {/* Desktop nav (top right) */}
-          <nav className="hidden sm:flex gap-4 md:gap-6 items-center mt-2 sm:mt-0 sm:ml-0 sm:absolute sm:right-6 sm:top-1/2 sm:-translate-y-1/2">
-            {nav.slice(1).map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-label={item.label}
-                className="px-6 py-2 rounded-full font-bold text-base md:text-lg uppercase tracking-wide bg-[#3881ff] text-white shadow-md border border-[#3881ff] hover:scale-105 hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 focus:ring-offset-[#18181b]"
-                style={{textShadow:'0 1px 6px rgba(56,129,255,0.10)'}}
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </header>
-        {/* Hamburger menu overlay */}
-        {menuOpen && (
-          <div className="fixed inset-0 z-50 bg-[#18181b] bg-opacity-95 flex flex-col items-center justify-center sm:hidden transition-all">
-            <button
-              className="absolute top-6 left-6"
-              aria-label="Close menu"
-              onClick={() => setMenuOpen(false)}
-              type="button"
-            >
-              <HamburgerIcon open={true} />
-            </button>
-            <nav className="flex flex-col gap-8 mt-12">
-              {nav.slice(1).map((item) => (
+        <header className="w-full px-4 sm:px-6 py-3 bg-[#18181b]/90 backdrop-blur-sm fixed top-0 left-0 right-0 z-40 border-b border-gray-800">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            {/* Logo */}
+            <Link href="/" className="flex-shrink-0">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-[#3881ff] hover:text-[#5a9eff] transition-colors"
+                  style={{textShadow:'0 2px 12px rgba(56,129,255,0.20)'}}>
+                {homepage.mainTitle}
+              </h1>
+            </Link>
+
+            {/* Desktop Navigation */}
+            <nav className="hidden lg:flex items-center gap-2 xl:gap-3">
+              {nav.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  aria-label={item.label}
-                  className="text-3xl font-bold text-[#3881ff] hover:text-white transition-all text-center"
-                  onClick={() => setMenuOpen(false)}
+                  className="px-4 xl:px-5 py-2.5 rounded-xl font-medium text-sm xl:text-base text-gray-300 bg-gray-800/50 border border-gray-700 hover:text-white hover:bg-[#3881ff]/90 hover:border-[#3881ff] hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-[#3881ff]/30"
                 >
                   {item.label}
                 </Link>
               ))}
             </nav>
+
+            {/* Mobile Menu Button */}
+            <button
+              className="lg:hidden p-2 rounded-lg hover:bg-gray-800 transition-colors"
+              aria-label="Toggle menu"
+              onClick={() => setMenuOpen(!menuOpen)}
+              type="button"
+            >
+              <HamburgerIcon open={menuOpen} />
+            </button>
+          </div>
+        </header>
+        {/* Mobile Menu Overlay */}
+        {menuOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMenuOpen(false)} />
+            <div className="fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-[#18181b] border-l border-gray-800 p-6 shadow-2xl">
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="text-xl font-bold text-[#3881ff]">メニュー</h2>
+                <button
+                  onClick={() => setMenuOpen(false)}
+                  className="p-2 rounded-lg hover:bg-gray-800 transition-colors"
+                  aria-label="Close menu"
+                >
+                  <HamburgerIcon open={true} />
+                </button>
+              </div>
+              <nav className="flex flex-col gap-3">
+                {nav.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="px-4 py-3 rounded-xl font-medium text-gray-300 bg-gray-800/50 border border-gray-700 hover:text-white hover:bg-[#3881ff]/90 hover:border-[#3881ff] transition-all duration-300"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+            </div>
           </div>
         )}
-        <main className="flex-grow w-full flex flex-col pt-20">
+        <main className="flex-1 flex flex-col pt-20 sm:pt-24 min-h-0">
           {pathname === "/" ? (
-            <section className="flex flex-1 flex-col items-center justify-center w-full h-full">
-              <div className="w-full flex flex-col items-center justify-center mt-2">
-                {/* Main text, always centered, max-w-xl for all screens */}
-                <div className="flex flex-col items-center w-full max-w-xl">
-                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#3881ff] mb-4 text-center break-words">{homepage.subtitle}</h2>
-                  <p className="text-lg sm:text-xl text-gray-200 mb-8 text-center break-words">
-                    {homepage.description}
-                  </p>
-                </div>
-                {/* Book Now button below main text on mobile and desktop */}
-                <div className="w-full flex flex-col items-center mb-8">
-                  <Link
-                    href={nav[0].href}
-                    aria-label={nav[0].label}
-                    className="px-8 sm:px-10 py-4 sm:py-5 rounded-full font-bold sm:font-extrabold text-lg sm:text-2xl uppercase tracking-wide bg-[#3881ff] text-white shadow-md sm:shadow-xl border border-[#3881ff] hover:scale-105 hover:shadow-lg sm:hover:shadow-2xl transition-all text-center focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 focus:ring-offset-[#18181b] mb-0"
-                    style={{textShadow:'0 1px 6px rgba(56,129,255,0.10)'}}>
-                    {nav[0].label}
-                  </Link>
-                </div>
+            <section className="flex-1 flex items-center justify-center px-4 sm:px-6 min-h-0">
+              <div className="max-w-4xl mx-auto text-center">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-[#3881ff] mb-4 sm:mb-6 leading-tight"
+                    style={{textShadow:'0 4px 20px rgba(56,129,255,0.30)'}}>
+                  {homepage.mainTitle}
+                </h1>
+                <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-white mb-4 sm:mb-6 leading-relaxed">
+                  {homepage.subtitle}
+                </h2>
+                <p className="text-base sm:text-lg md:text-xl text-gray-300 mb-10 sm:mb-12 leading-relaxed max-w-3xl mx-auto">
+                  {homepage.description}
+                </p>
+                <Link
+                  href={nav[0].href}
+                  className="inline-block px-6 sm:px-8 py-3 sm:py-4 rounded-full font-bold text-base sm:text-lg md:text-xl bg-gradient-to-r from-[#3881ff] to-[#5a9eff] text-white shadow-xl hover:from-[#5a9eff] hover:to-[#3881ff] hover:scale-105 transition-all duration-300 border-2 border-[#3881ff]/50 hover:border-[#5a9eff] focus:outline-none focus:ring-4 focus:ring-blue-200/50"
+                  style={{textShadow:'0 2px 8px rgba(0,0,0,0.20)'}}
+                >
+                  {nav[0].label}
+                </Link>
               </div>
             </section>
           ) : (
-            <section className="flex flex-col items-center justify-center w-full px-4 py-8 flex-1">
-              <div className="max-w-2xl w-full flex flex-col items-center justify-center mt-2">
+            <section className="flex-1 px-4 sm:px-6 py-6 sm:py-8 overflow-y-auto min-h-0">
+              <div className="max-w-4xl mx-auto">
                 {children}
               </div>
             </section>
           )}
         </main>
-        {/* Footer with contact email and legal link */}
-        <footer className="w-full px-6 pb-4 bg-transparent text-gray-400 text-sm flex flex-col sm:flex-row items-center sm:items-center justify-between pointer-events-auto">
-          <div className="flex flex-row items-center gap-4 order-2 sm:order-1 mt-2 sm:mt-0">
-            <Link href="/tokutei-shouhiki-hou" className="text-[#3881ff] hover:underline">特定商取引法に基づく表記</Link>
-          </div>
-          <div className="flex flex-row items-center order-1 sm:order-2">
-            <span className="mr-1">メール:</span>
-            <a href="mailto:lucaswilsoncontact@gmail.com" className="text-[#3881ff] hover:underline">luke@eigotankentai.com</a>
+        {/* Footer */}
+        <footer className="w-full px-4 sm:px-6 py-4 sm:py-6 bg-[#18181b] border-t border-gray-800 flex-shrink-0">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 text-sm text-gray-400">
+            <div className="flex items-center gap-2">
+              <span>メール:</span>
+              <a href="mailto:luke@eigotankentai.com" className="text-[#3881ff] hover:text-[#5a9eff] transition-colors">
+                luke@eigotankentai.com
+              </a>
+            </div>
+            <Link 
+              href="/tokutei-shouhiki-hou" 
+              className="text-[#3881ff] hover:text-[#5a9eff] transition-colors"
+            >
+              特定商取引法に基づく表記
+            </Link>
           </div>
         </footer>
       </div>

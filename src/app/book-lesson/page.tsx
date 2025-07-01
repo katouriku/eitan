@@ -64,7 +64,7 @@ function StripePaymentForm({ onSuccess, onError }: { clientSecret: string, onSuc
       />
       {error && <div className="text-red-400 font-bold mt-2">{error}</div>}
       <button
-        className="px-8 py-3 rounded-xl bg-green-500 text-white font-extrabold text-lg shadow-lg hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-green-300/50"
+        className="btn-success px-8 py-3"
         type="submit"
         disabled={loading || !stripe || !elements}
       >
@@ -82,9 +82,15 @@ export default function BookLessonPage() {
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [step, setStepState] = useState<1 | 2 | 3>(1);
+  const [substep, setSubstep] = useState<1 | 2 | 3 | 4>(1); // 1: participants, 2: contact info, 3: date/time, 4: price/payment
   const [lessonType, setLessonType] = useState<"online" | "in-person" | "">("");
   const [participants, setParticipants] = useState(1);
   const [showParticipantWarning, setShowParticipantWarning] = useState(false);
+  
+  // Contact info
+  const [customerName, setCustomerName] = useState("");
+  const [customerKana, setCustomerKana] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
   const paymentFormRef = useRef<HTMLDivElement>(null);
   const lessonTypeParam = useQueryParam("lessonType");
 
@@ -475,113 +481,91 @@ export default function BookLessonPage() {
   }
 
   // Progress bar component
-  function ProgressBar({ step }: { step: 1 | 2 | 3 }) {
-    // Fill only up to the current step: 0% (step 1), 50% (step 2), 100% (step 3)
-    const percent = step === 1 ? 0 : step === 2 ? 50 : 100;
-    // Helper to allow going back to previous steps
-    const setStepIfAllowed = (target: 1 | 2 | 3) => {
-      if (target < step) setStep(target);
+  function ProgressBar({ step, substep }: { step: 1 | 2 | 3, substep?: 1 | 2 | 3 | 4 }) {
+    // Convert to unified 6-step system: 1=lesson type, 2=participants, 3=contact, 4=date/time, 5=payment, 6=confirmation
+    let currentStep = 1;
+    if (step === 1) {
+      if (lessonType === "") currentStep = 1; // lesson type selection
+      else currentStep = substep ? substep + 1 : 2; // substeps 1-4 become steps 2-5
+    } else if (step === 2) {
+      currentStep = 5; // payment
+    } else if (step === 3) {
+      currentStep = 6; // confirmation
+    }
+
+    const stepLabels = ["タイプ", "人数", "連絡先", "日時", "支払い", "完了"];
+    
+    // Handle clicking on completed steps
+    const handleStepClick = (stepNum: number) => {
+      if (stepNum >= currentStep) return; // Can't go to future steps
+      
+      if (stepNum === 1 && lessonType) {
+        // Reset to lesson type selection
+        setLessonType("");
+        setSubstep(1);
+      } else if (stepNum === 2 && lessonType) {
+        setSubstep(1); // participants
+      } else if (stepNum === 3 && lessonType) {
+        setSubstep(2); // contact info
+      } else if (stepNum === 4 && lessonType) {
+        setSubstep(3); // date/time
+      } else if (stepNum === 5 && lessonType) {
+        setSubstep(4); // payment
+      }
     };
+    
     return (
-      <div className="w-full max-w-lg mx-auto mb-8 flex flex-col items-center">
-        <div className="relative w-full h-8 bg-[#23232a] rounded-full overflow-visible flex items-center">
-          <div
-            className="absolute left-0 top-1/2 h-2 bg-[#3881ff] transition-all duration-300 rounded-full"
-            style={{ width: `${percent}%`, transform: 'translateY(-50%)', zIndex: 1 }}
-          />
-          <div className="relative w-full flex justify-between items-center z-10">
-            {[1, 2, 3].map((n, i) => {
-              const isClickable = step > n;
-              return (
-                <div key={n} className={i === 1 ? "flex flex-col items-center w-1/3 justify-center" : "flex flex-col items-center w-0"} style={i === 0 ? {alignItems: 'flex-start'} : i === 2 ? {alignItems: 'flex-end'} : {}}>
-                  {isClickable ? (
-                    <button
-                      type="button"
-                      aria-label={`Go to step ${n}`}
-                      tabIndex={0}
-                      onClick={() => setStepIfAllowed(n as 1 | 2 | 3)}
-                      className={
-                        `w-9 h-9 flex items-center justify-center rounded-full border-2 text-base font-bold transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#3881ff] ` +
-                        'bg-[#3881ff] border-[#3881ff] text-white hover:scale-105'
-                      }
-                      style={{ zIndex: 2 }}
-                    >
-                      {n}
-                    </button>
-                  ) : (
-                    <div
-                      className={
-                        `w-9 h-9 flex items-center justify-center rounded-full border-2 text-base font-bold transition-all duration-200 ` +
-                        (step > i ? 'bg-[#3881ff] border-[#3881ff] text-white' : step === i + 1 ? 'bg-[#23232a] border-[#3881ff] text-[#3881ff]' : 'bg-[#23232a] border-[#31313a] text-[#31313a]')
-                      }
-                      style={{ zIndex: 2 }}
-                    >
-                      {n}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+      <div className="w-full max-w-4xl mx-auto mb-8 px-6 progress-container">
+        <div className="relative">
+          {/* Progress bar container */}
+          <div className="relative" style={{ height: '50px' }}>
+            {/* Background progress line */}
+            <div 
+              className="absolute h-6 bg-gray-700 rounded-full"
+              style={{ 
+                left: '25px', 
+                right: '25px', 
+                top: '75%', 
+                zIndex: 1
+              }}
+            />
+            
+            {/* Active progress line */}
+            <div 
+              className="absolute h-6 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] rounded-full transition-all duration-500 ease-out"
+              style={{ 
+                left: '25px',
+                top: '75%',
+                width: currentStep === 1 ? '0px' : `calc((100% - 50px) * ${(currentStep - 1) / 5})`,
+                zIndex: 2
+              }}
+            />
           </div>
-        </div>
-        {/* Absolute-positioned labels for perfect centering */}
-        <div className="relative w-full mt-3 h-6">
-          {/* Info label */}
-          {step > 1 ? (
-            <button
-              type="button"
-              aria-label="Go to Info step"
-              tabIndex={0}
-              onClick={() => setStepIfAllowed(1)}
-              className="absolute left-0 text-[#3881ff] hover:underline font-bold cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#3881ff]"
-              style={{ minWidth: 60, textAlign: 'center', transform: 'translateX(-50%)', left: 'calc(0% + 18px)' }}
-            >
-              予約情報
-            </button>
-          ) : (
-            <span
-              className={
-                (step === 1 ? ' text-white' : '') +
-                ' absolute left-0'
-              }
-              style={{ minWidth: 60, textAlign: 'center', transform: 'translateX(-50%)', left: 'calc(0% + 18px)' }}
-            >
-              予約情報
-            </span>
-          )}
-          {/* Payment label */}
-          {step > 2 ? (
-            <button
-              type="button"
-              aria-label="Go to Payment step"
-              tabIndex={0}
-              onClick={() => setStepIfAllowed(2)}
-              className="absolute left-1/2 text-[#3881ff] hover:underline font-bold cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#3881ff]"
-              style={{ minWidth: 60, textAlign: 'center', transform: 'translateX(-50%)' }}
-            >
-              支払い
-            </button>
-          ) : (
-            <span
-              className={
-                (step === 2 ? ' text-white' : '') +
-                ' absolute left-1/2'
-              }
-              style={{ minWidth: 60, textAlign: 'center', transform: 'translateX(-50%)' }}
-            >
-              支払い
-            </span>
-          )}
-          {/* Done label (never clickable) */}
-          <span
-            className={
-              (step === 3 ? ' text-white' : '') +
-              ' absolute right-0'
-            }
-            style={{ minWidth: 60, textAlign: 'center', transform: 'translateX(50%)', right: 'calc(0% + 18px)' }}
-          >
-            確認
-          </span>
+          
+          {/* Step circles and labels combined */}
+          <div className="flex items-start justify-between" style={{ paddingLeft: '25px', paddingRight: '25px', marginTop: '-25px' }}>
+            {[1, 2, 3, 4, 5, 6].map((stepNum) => (
+              <div key={stepNum} className="flex flex-col items-center">
+                <button
+                  onClick={() => handleStepClick(stepNum)}
+                  disabled={stepNum >= currentStep}
+                  className={`progress-step-circle w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 mb-3 ${
+                    stepNum <= currentStep ? 'active' : ''
+                  }`}
+                  style={{ zIndex: 10 }}
+                >
+                  {stepNum}
+                </button>
+                <span 
+                  className={`progress-step-label text-sm transition-colors text-center font-medium ${
+                    stepNum <= currentStep ? 'text-[#3881ff]' : 'text-gray-500'
+                  }`}
+                >
+                  {stepLabels[stepNum - 1]}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -601,92 +585,77 @@ export default function BookLessonPage() {
       <section className="flex flex-col items-center justify-center w-full px-4">
         <div className="flex flex-col items-center justify-center max-w-2xl min-w-[340px] w-full order-2 md:order-none min-h-0">
           <span
-            className="font-extrabold text-3xl sm:text-4xl md:text-5xl text-[#3881ff] mb-3 text-center w-full">
+            className="font-extrabold text-2xl sm:text-3xl md:text-4xl text-[#3881ff] mb-4 text-center w-full">
             レッスンを予約
           </span>
-          {/* Price display, always visible */}
-          <div className="w-full flex flex-col items-center mb-3">
-            <div className="text-lg font-bold text-gray-200 flex flex-row items-center gap-4">
-              <span>合計金額(税込み): <span className="text-[#3881ff] text-2xl font-extrabold">{getDisplayPrice()}</span></span>
-            </div>
-            {priceError && <div className="text-red-400 text-sm font-bold">{priceError}</div>}
-            <div className="text-sm text-gray-400 mt-2 sm:mt-0 flex flex-row items-center">(参加者数: {participants}名)</div>
-          </div>
-          <ProgressBar step={step} />
+          {/* Price display and participant count, side-by-side on desktop - only show after lesson type selected */}
+          {lessonType && (
+            <>
+              <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 mb-2">
+                <div className="text-base sm:text-lg font-bold text-gray-200 flex flex-row items-center gap-2">
+                  <span>合計金額(税込み): <span className="text-[#3881ff] text-xl sm:text-2xl font-extrabold">{getDisplayPrice()}</span></span>
+                </div>
+                <div className="text-xs sm:text-sm text-gray-400 flex flex-row items-center">
+                  (参加者数: {participants}名)
+                </div>
+              </div>
+              {priceError && (
+                <div className="text-red-400 text-sm font-bold text-center mb-2">{priceError}</div>
+              )}
+            </>
+          )}
+          <ProgressBar step={step} substep={step === 1 ? substep : undefined} />
           {/* If lessonType is set from query, skip selection and go to step 1 form */}
           {step === 1 && lessonType === "" && (
-            <div className="bg-[#18181b] p-8 rounded-2xl shadow-xl w-full border-2 border-[#3881ff] flex flex-col gap-6 max-w-lg mx-auto min-h-0 min-w-0 mb-8">
-              <div className="text-lg text-gray-100 mb-4 text-center font-bold">レッスンの種類を選択してください</div>
-              <button
-                className="w-full px-6 py-4 rounded-xl bg-[#3881ff] text-white font-extrabold text-lg shadow-lg hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-[#3881ff]/50 mb-4"
-                onClick={() => setLessonType("online")}
-              >
-                オンラインレッスン
-              </button>
-              <button
-                className="w-full px-6 py-4 rounded-xl bg-[#3881ff] text-white font-extrabold text-lg shadow-lg hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-[#3881ff]/50"
-                onClick={() => setLessonType("in-person")}
-              >
-                対面レッスン
-              </button>
-              <div className="text-xs text-gray-500 mt-2 text-center">※ 対面レッスンは美里町から30分以内の場所のみ対応しています。</div>
+            <div className="bg-gray-900/50 border border-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-2xl mx-auto backdrop-blur-sm hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
+              <h3 className="text-2xl text-white mb-8 text-center font-bold">レッスンの種類を選択してください</h3>
+              <div className="grid md:grid-cols-2 gap-6">
+                <button
+                  className="btn-lesson btn-lesson-online"
+                  onClick={() => setLessonType("online")}
+                >
+                  <div className="btn-lesson-content">
+                    <div className="btn-lesson-icon">💻</div>
+                    <div className="btn-lesson-title">オンラインレッスン</div>
+                    <div className="btn-lesson-subtitle">Zoom、Google Meetなど</div>
+                  </div>
+                </button>
+                <button
+                  className="btn-lesson btn-lesson-inperson"
+                  onClick={() => setLessonType("in-person")}
+                >
+                  <div className="btn-lesson-content">
+                    <div className="btn-lesson-icon">🏠</div>
+                    <div className="btn-lesson-title">対面レッスン</div>
+                    <div className="btn-lesson-subtitle">ご自宅またはカフェなど</div>
+                  </div>
+                </button>
+              </div>
+              <div className="text-sm text-gray-300 mt-6 text-center bg-gray-700/60 p-4 rounded-xl border border-gray-600">
+                ※ 対面レッスンは美里町から30分以内の場所のみ対応しています。
+              </div>
             </div>
           )}
           {step === 1 && lessonType !== "" && (
-            <form className="bg-[#18181b] p-8 rounded-2xl shadow-xl w-full border-2 border-[#3881ff] flex flex-col gap-6 max-w-lg mx-auto min-h-0 min-w-0" onSubmit={handleSubmit}>
-              <input type="hidden" name="lessonType" value={lessonType} />
-              {/* Name and Kana Name inputs: stacked on mobile, side by side on desktop */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1 flex flex-col">
-                  <label className="block text-gray-200 text-base font-bold text-left mb-2" htmlFor="name">お名前（漢字）</label>
-                  <input
-                    id="name"
-                    name="name"
-                    required
-                    placeholder="例: 山田 太郎"
-                    defaultValue={Cookies.get("booking_name") || ""}
-                    className="w-full p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 text-base focus:outline-none focus:ring-2 focus:ring-[#3881ff]"
-                  />
-                </div>
-                <div className="flex-1 flex flex-col">
-                  <label className="block text-gray-200 text-base font-bold text-left mb-2" htmlFor="kana">お名前（カナ）</label>
-                  <input
-                    id="kana"
-                    name="kana"
-                    required
-                    placeholder="例: ヤマダ タロウ"
-                    className="w-full p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 text-base focus:outline-none focus:ring-2 focus:ring-[#3881ff]"
-                  />
-                </div>
-              </div>
-              {/* Email input and participants selector side by side on desktop, stacked on mobile */}
-              <div className="flex flex-col sm:flex-row gap-2 mb-2">
-                <div className="flex-1">
-                  <label htmlFor="email" className="block text-gray-200 text-base font-bold text-left mb-2">メールアドレス</label>
-                  <input
-                    id="email"
-                    name="email"
-                    required
-                    type="email"
-                    placeholder="例: your@email.com"
-                    defaultValue={Cookies.get("booking_email") || ""}
-                    className="p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 text-base focus:outline-none focus:ring-2 focus:ring-[#3881ff] w-full"
-                  />
-                </div>
-                {/* Participants selector */}
-                <div className="flex flex-col gap-1 min-w-[160px] sm:ml-2">
-                  <label className="text-gray-200 text-base font-bold mb-2">参加者数</label>
-                  <div className="flex flex-row items-center gap-2">
+            <div className="space-y-6 max-w-lg mx-auto">
+              {/* Stage 1: Participants */}
+              {substep === 1 && (
+                <div className="bg-gray-900/50 border border-gray-800 p-8 rounded-xl shadow-xl hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
+                  <h3 className="text-xl text-white mb-6 text-center font-bold">参加者数を選択</h3>
+                  <div className="flex items-center justify-center gap-6">
                     <button
                       type="button"
-                      className="px-4 py-2 rounded bg-[#23232a] text-[#3881ff] font-bold text-base border border-[#3881ff] hover:bg-[#3881ff] hover:text-white transition-all"
+                      className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-700 to-gray-800 text-[#3881ff] font-bold text-xl border-2 border-[#3881ff] hover:from-[#3881ff] hover:to-[#5a9eff] hover:text-white hover:scale-110 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100 shadow-lg"
                       onClick={() => setParticipants(Math.max(1, participants - 1))}
-                      aria-label="減らす"
+                      disabled={participants <= 1}
                     >-</button>
-                    <span className="text-lg font-bold text-gray-100 w-12 text-center">{participants}名</span>
+                    <div className="text-center w-20">
+                      <div className="text-4xl font-bold text-white w-full">{participants}</div>
+                      <div className="text-gray-400">名</div>
+                    </div>
                     <button
                       type="button"
-                      className="px-4 py-2 rounded bg-[#23232a] text-[#3881ff] font-bold text-base border border-[#3881ff] hover:bg-[#3881ff] hover:text-white transition-all"
+                      className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-700 to-gray-800 text-[#3881ff] font-bold text-xl border-2 border-[#3881ff] hover:from-[#3881ff] hover:to-[#5a9eff] hover:text-white hover:scale-110 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100 shadow-lg"
                       onClick={() => {
                         if (participants < 5) {
                           setParticipants(participants + 1);
@@ -694,101 +663,245 @@ export default function BookLessonPage() {
                           setShowParticipantWarning(true);
                         }
                       }}
-                      aria-label="増やす"
+                      disabled={participants >= 5}
                     >+</button>
                   </div>
                   {showParticipantWarning && (
-                    <div className="text-yellow-400 text-sm font-bold mt-1">参加者は最大5名までです。</div>
+                    <div className="text-yellow-400 text-sm text-center mt-4 bg-yellow-900/20 p-3 rounded-lg">
+                      参加者は最大5名までです。
+                    </div>
                   )}
-                  <input type="hidden" name="participants" value={participants} />
-                </div>
-              </div>
-              {/* Date and Time side by side on desktop, stacked on mobile */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
-                  <label className="block text-gray-200 font-bold mb-2">予約日</label>
-                  <select
-                    value={selectedDate}
-                    onChange={(e) => {
-                      setSelectedDate(e.target.value);
-                      setSelectedTime("");
-                    }}
-                    required
-                    className="w-full p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 mb-2 focus:outline-none focus:ring-2 focus:ring-[#3881ff]"
-                    style={{ color: selectedDate && getTimesForDate(selectedDate).length === 0 ? '#888' : undefined }}
-                  >
-                    <option value="">-- 日を選んでください --</option>
-                    {getAvailableDates().map((date) => {
-                      const d = new Date(date);
-                      const weekday = d.getDay();
-                      const weekdayNames = ["日", "月", "火", "水", "木", "金", "土"];
-                      const fullyBooked = isDateFullyBooked(date);
-                      return (
-                        <option key={date} value={date} disabled={fullyBooked} className={fullyBooked ? 'bg-[#23232a] text-gray-400' : ''} style={fullyBooked ? { color: '#888', backgroundColor: '#23232a', fontStyle: 'italic' } : {}}>
-                          {date}（{weekdayNames[weekday]}）{fullyBooked ? "（満席）" : ""}
-                        </option>
-                      );
-                    })}
-                  </select>
-                </div>
-                <div className="flex-1">
-                  <label className="block text-gray-200 font-bold mb-2">予約時間</label>
-                  <select
-                    value={selectedTime}
-                    onChange={(e) => setSelectedTime(e.target.value)}
-                    required
-                    className="w-full p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#3881ff]"
-                    disabled={!selectedDate}
-                  >
-                    <option value="">-- 時間を選んでください --</option>
-                    {selectedDate && getTimesForDate(selectedDate).length === 0 && (
-                      <option value="" disabled style={{ color: '#888' }}>この日は満席です</option>
-                    )}
-                    {getTimesForDate(selectedDate).map((slot) => (
-                      <option key={slot.value} value={slot.value} disabled={slot.disabled} style={slot.disabled ? { color: '#888', fontStyle: 'italic' } : {}}>
-                        {slot.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              {/* Coupon input with submit button */}
-              <div className="flex flex-col gap-2">
-                <label htmlFor="coupon" className="block text-gray-200 text-base font-bold text-left">クーポンコード (任意)</label>
-                <div className="flex flex-row gap-2 items-center">
-                  <input
-                    id="coupon"
-                    name="coupon"
-                    type="text"
-                    placeholder="クーポン"
-                    value={coupon}
-                    onChange={e => setCoupon(e.target.value)}
-                    className="w-full p-3 rounded-lg border border-[#31313a] bg-[#23232a] text-gray-100 text-base focus:outline-none focus:ring-2 focus:ring-[#3881ff]"
-                  />
                   <button
                     type="button"
-                    className="px-4 py-3 min-w-35 rounded bg-[#3881ff] text-white font-bold text-sm border border-[#3881ff] hover:bg-[#3881ff] hover:text-white transition-all"
-                    onClick={() => setCouponConfirmed(true)}
-                    disabled={priceLoading || !coupon || couponConfirmed}
+                    onClick={() => setSubstep(2)}
+                    className="btn-primary w-full mt-8"
                   >
-                    {couponConfirmed ? "適用済み" : "クーポンを適用"}
+                    次へ
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLessonType("")}
+                    className="btn-danger w-full mt-4"
+                  >
+                    レッスンタイプを変更
                   </button>
                 </div>
-              </div>
-              {formError && <div className="text-red-400 font-bold">{formError}</div>}
-              <button type="submit" className="px-8 py-3 rounded-xl bg-[#3881ff] text-white font-extrabold text-lg shadow-lg hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-[#3881ff]/50" disabled={formLoading}>
-                {formLoading
-                  ? "ロード中..."
-                  : finalPrice === 0
-                  ? "予約確定"
-                  : "支払いへ進む"}
-              </button>
-              <button type="button" className="mt-2 text-[#3881ff] underline text-sm" onClick={() => setLessonType("")}>戻る</button>
-            </form>
+              )}
+
+              {/* Stage 2: Contact Info */}
+              {substep === 2 && (
+                <div className="bg-gray-900/50 border border-gray-800 p-8 rounded-xl shadow-xl hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
+                  <h3 className="text-xl text-white mb-6 text-center font-bold">お客様情報</h3>
+                  <div className="space-y-4">
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-gray-300 font-medium mb-2">お名前（漢字）</label>
+                        <input
+                          type="text"
+                          value={customerName}
+                          onChange={(e) => setCustomerName(e.target.value)}
+                          placeholder="例: 山田 太郎"
+                          className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff]"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-gray-300 font-medium mb-2">お名前（カナ）</label>
+                        <input
+                          type="text"
+                          value={customerKana}
+                          onChange={(e) => setCustomerKana(e.target.value)}
+                          placeholder="例: ヤマダ タロウ"
+                          className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff]"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-gray-300 font-medium mb-2">メールアドレス</label>
+                      <input
+                        type="email"
+                        value={customerEmail}
+                        onChange={(e) => setCustomerEmail(e.target.value)}
+                        placeholder="例: your@email.com"
+                        className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff]"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-4 mt-8">
+                    <button
+                      type="button"
+                      onClick={() => setSubstep(1)}
+                      className="btn-danger flex-1"
+                    >
+                      戻る
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSubstep(3)}
+                      disabled={!customerName || !customerKana || !customerEmail}
+                      className="btn-primary flex-1"
+                    >
+                      次へ
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Stage 3: Date and Time */}
+              {substep === 3 && (
+                <div className="bg-gray-900/50 border border-gray-800 p-8 rounded-xl shadow-xl hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
+                  <h3 className="text-xl text-white mb-6 text-center font-bold">日時を選択</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-gray-300 font-medium mb-2">予約日</label>
+                      <select
+                        value={selectedDate}
+                        onChange={(e) => {
+                          setSelectedDate(e.target.value);
+                          setSelectedTime("");
+                        }}
+                        className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff]"
+                        required
+                      >
+                        <option value="">-- 日を選んでください --</option>
+                        {getAvailableDates().map((date) => {
+                          const d = new Date(date);
+                          const weekday = d.getDay();
+                          const weekdayNames = ["日", "月", "火", "水", "木", "金", "土"];
+                          const fullyBooked = isDateFullyBooked(date);
+                          return (
+                            <option key={date} value={date} disabled={fullyBooked}>
+                              {date}（{weekdayNames[weekday]}）{fullyBooked ? "（満席）" : ""}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-gray-300 font-medium mb-2">予約時間</label>
+                      <select
+                        value={selectedTime}
+                        onChange={(e) => setSelectedTime(e.target.value)}
+                        className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff]"
+                        disabled={!selectedDate}
+                        required
+                      >
+                        <option value="">-- 時間を選んでください --</option>
+                        {selectedDate && getTimesForDate(selectedDate).length === 0 && (
+                          <option value="" disabled>この日は満席です</option>
+                        )}
+                        {getTimesForDate(selectedDate).map((slot) => (
+                          <option key={slot.value} value={slot.value} disabled={slot.disabled}>
+                            {slot.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="flex gap-4 mt-8">
+                    <button
+                      type="button"
+                      onClick={() => setSubstep(2)}
+                      className="btn-danger flex-1"
+                    >
+                      戻る
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSubstep(4)}
+                      disabled={!selectedDate || !selectedTime}
+                      className="btn-primary flex-1"
+                    >
+                      次へ
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Stage 4: Price and Payment */}
+              {substep === 4 && (
+                <form onSubmit={handleSubmit} className="bg-gray-900/50 border border-gray-800 p-8 rounded-xl shadow-xl hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
+                  <input type="hidden" name="lessonType" value={lessonType} />
+                  <input type="hidden" name="name" value={customerName} />
+                  <input type="hidden" name="kana" value={customerKana} />
+                  <input type="hidden" name="email" value={customerEmail} />
+                  <input type="hidden" name="participants" value={participants} />
+                  
+                  <h3 className="text-xl text-white mb-8 text-center font-bold">料金確認・お支払い</h3>
+                  
+                  {/* Summary */}
+                  <div className="bg-gray-800/50 p-4 rounded-lg mb-6 space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">レッスン形式:</span>
+                      <span className="text-white">{lessonType === 'online' ? 'オンライン' : '対面'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">参加者数:</span>
+                      <span className="text-white">{participants}名</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">日時:</span>
+                      <span className="text-white">{selectedDate} {selectedTime}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-gray-300 font-medium mb-2">クーポンコード（任意）</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={coupon}
+                          onChange={(e) => setCoupon(e.target.value)}
+                          placeholder="クーポンコード"
+                          className="flex-1 px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setCouponConfirmed(true)}
+                          disabled={!coupon || couponConfirmed || priceLoading}
+                          className="btn-success"
+                        >
+                          {couponConfirmed ? "適用済み" : "適用"}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="text-center py-4">
+                      <div className="text-2xl font-bold text-[#3881ff]">
+                        合計: {getDisplayPrice()}
+                      </div>
+                      {priceError && <div className="text-red-400 text-sm mt-2">{priceError}</div>}
+                    </div>
+                  </div>
+
+                  {formError && <div className="text-red-400 text-center mb-4">{formError}</div>}
+
+                  <div className="flex gap-4 mt-8">
+                    <button
+                      type="button"
+                      onClick={() => setSubstep(3)}
+                      className="btn-danger flex-1"
+                    >
+                      戻る
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={formLoading}
+                      className="btn-primary flex-1"
+                    >
+                      {formLoading ? "処理中..." : finalPrice === 0 ? "予約確定" : "支払いへ進む"}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
           )}
           {step === 2 && clientSecret && (
             <div
-              className="bg-[#18181b] p-8 rounded-2xl shadow-xl w-full flex flex-col gap-6 max-w-lg mx-auto min-h-0 min-w-0 max-h-[90vh] overflow-y-auto justify-center"
+              className="bg-gray-900/50 border border-gray-800 p-8 rounded-2xl shadow-xl w-full flex flex-col gap-6 max-w-lg mx-auto min-h-0 min-w-0 max-h-[90vh] overflow-y-auto justify-center hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300"
               id="payment-form-container"
               ref={paymentFormRef}
               style={{ marginTop: 'auto', marginBottom: 'auto' }}
@@ -824,7 +937,7 @@ export default function BookLessonPage() {
             </div>
           )}
           {step === 3 && (
-            <div className="bg-[#18181b] p-8 rounded-2xl shadow-xl w-full flex flex-col items-center gap-6 max-w-lg mx-auto min-h-0 min-w-0 max-h-[90vh] justify-center">
+            <div className="bg-gray-900/50 border border-gray-800 p-8 rounded-2xl shadow-xl w-full flex flex-col items-center gap-6 max-w-lg mx-auto min-h-0 min-w-0 max-h-[90vh] justify-center hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
               <svg className="w-16 h-16 text-green-400 mb-2" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>

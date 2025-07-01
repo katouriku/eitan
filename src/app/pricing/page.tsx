@@ -6,17 +6,6 @@ import { groq } from "next-sanity";
 import Image from "next/image";
 import { urlFor } from "@/sanity/lib/image";
 import Link from "next/link";
-import "../globals.css";
-
-// Helper to safely get image URL
-function getImageUrl(image: object) {
-  try {
-    if (!image) return null;
-    return urlFor(image as object).width(400).height(400).url();
-  } catch {
-    return null;
-  }
-}
 
 type Pricing = {
   title: string;
@@ -29,8 +18,6 @@ type Pricing = {
 export default function PricingPage() {
   const [pricings, setPricings] = useState<Pricing[]>([]);
 
-  const isLoading = !pricings || pricings.length === 0;
-
   useEffect(() => {
     async function fetchPricing() {
       const data = await client.fetch(
@@ -41,62 +28,79 @@ export default function PricingPage() {
     fetchPricing();
   }, []);
 
+  const isLoading = pricings.length === 0;
+
   if (isLoading) {
     return (
-      <main className="flex flex-col flex-1 min-w-0 w-full min-h-[100vh] pt-20">
-        <div className="text-2xl text-gray-400">ロード中...</div>
-      </main>
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-xl text-gray-400">ロード中...</div>
+      </div>
     );
   }
 
   return (
-    <main className="flex flex-1 min-w-0 w-full md:pt-20 md:pb-24">
-      <section className="flex flex-col md:flex-row flex-nowrap justify-center items-stretch gap-12 w-full px-6 py-6">
-        {pricings.map((pricing, idx) => (
-          <div key={idx} className="flex flex-col md:flex-row items-center md:items-stretch justify-center max-w-3xl w-full md:min-w-180 bg-[#23272f] rounded-2xl shadow-lg p-6 min-h-0 min-w-0">
-            {pricing.image && getImageUrl(pricing.image) && (
-              <div className="flex-shrink-0 relative aspect-square w-full md:w-1/2 max-w-xs md:max-w-sm rounded-2xl overflow-hidden mb-4 md:mb-0 md:mr-8">
+    <div className="space-y-12">
+      <div className="text-center">
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#3881ff] leading-tight">
+          料金プラン
+        </h1>
+      </div>
+      
+      <div className={`grid gap-6 lg:gap-8 justify-items-center ${
+        pricings.length === 1 
+          ? 'max-w-md mx-auto' 
+          : pricings.length === 2 
+          ? 'md:grid-cols-2 max-w-4xl mx-auto justify-center' 
+          : 'md:grid-cols-2 lg:grid-cols-3 justify-center'
+      }`}>
+        {pricings.map((pricing, index) => (
+          <Link
+            key={index}
+            href={`/book-lesson?lessonType=${pricing.title.toLowerCase().includes('オンライン') || pricing.title.toLowerCase().includes('online') ? 'online' : 'in-person'}`}
+            className="bg-gray-900/50 border border-gray-800 rounded-xl p-6 lg:p-8 hover:border-[#3881ff]/50 transition-all duration-300 hover:shadow-xl hover:shadow-[#3881ff]/10 hover:scale-[1.02] cursor-pointer group"
+          >
+            {pricing.image && (
+              <div className="relative aspect-square w-24 h-24 mx-auto mb-6 rounded-full overflow-hidden">
                 <Image
-                  src={getImageUrl(pricing.image) as string}
-                  alt="Pricing"
+                  src={urlFor(pricing.image).width(96).height(96).url()}
+                  alt={pricing.title}
                   fill
-                  className="object-cover w-full h-full rounded-2xl border-none"
-                  priority
-                  sizes="(max-width: 768px) 100vw, 320px"
+                  className="object-cover"
+                  sizes="96px"
                 />
               </div>
             )}
-            <div className="flex flex-col items-start justify-center w-full md:w-1/2">
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-[#3881ff] mb-4 text-left whitespace-nowrap" style={{textShadow:'0 2px 12px rgba(56,129,255,0.10)'}}>
+            
+            <div className="text-center space-y-4">
+              <h2 className="text-xl lg:text-2xl font-bold text-white group-hover:text-[#3881ff] transition-colors">
                 {pricing.title}
-              </h1>
-              <ul className="text-base sm:text-lg text-gray-200 mb-6 text-left list-disc pl-6">
-                {pricing.details && pricing.details.length > 0 &&
-                  pricing.details.map((detail: string, i: number) => (
-                    <li className="mb-2" key={i}>{detail}</li>
+              </h2>
+              
+              <div className="text-2xl lg:text-3xl font-bold text-[#3881ff]">
+                {pricing.price}
+                <span className="text-lg text-gray-400 font-normal">
+                  {pricing.unit}
+                </span>
+              </div>
+              
+              {pricing.details && pricing.details.length > 0 && (
+                <ul className="space-y-2 text-left text-gray-300">
+                  {pricing.details.map((detail, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <span className="text-[#3881ff] mt-1">•</span>
+                      <span className="text-sm lg:text-base">{detail}</span>
+                    </li>
                   ))}
-              </ul>
-              {(pricing.price || pricing.unit) && (
-                <div className="flex flex-row items-center gap-2 text-lg text-gray-200 mb-4 whitespace-nowrap">
-                  {pricing.price && <span className="font-bold text-[#3881ff] whitespace-nowrap">{pricing.price}</span>}
-                  {pricing.unit && <span className="ml-2 text-base text-gray-400 whitespace-nowrap">{pricing.unit}</span>}
-                </div>
+                </ul>
               )}
-              <Link
-                href={(() => {
-                  const title = pricing.title.toLowerCase().replace(/\s/g, "");
-                  if (title.includes("対面レッスン")) return "/book-lesson?lessonType=in-person";
-                  if (title.includes("ゲームレッスン")) return "/book-lesson?lessonType=online";
-                  return "/book-lesson";
-                })()}
-                className="px-8 py-3 rounded-full font-bold text-lg uppercase tracking-wide bg-[#3881ff] text-white shadow-md border border-[#3881ff] hover:scale-105 hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-200 focus:ring-offset-2 focus:ring-offset-[#18181b] mb-4"
-                style={{textShadow:'0 1px 6px rgba(56,129,255,0.10)'}}>
-                レッスンを予約
-              </Link>
+              
+              <div className="mt-6 px-6 py-3 rounded-full bg-gradient-to-r from-[#3881ff] to-[#5a9eff] text-white font-bold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                このプランで予約
+              </div>
             </div>
-          </div>
+          </Link>
         ))}
-      </section>
-    </main>
+      </div>
+    </div>
   );
 }

@@ -13,9 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "エイタン",
-  description:
-    "User-friendly, modern English tutoring with a focus on conversation, confidence, and real-world skills. Book lessons, view pricing, and learn about our unique method. Taught by a native English speaker. Online and flexible scheduling.",
+  title: "エイタン - 英語探検隊",
+  description: "ユーザーフレンドリーでモダンな英語レッスン。会話、自信、実世界のスキルに焦点を当てています。レッスン予約、料金表示、独自のメソッドについて学べます。ネイティブスピーカーによる指導。オンラインと柔軟なスケジューリング。",
 };
 
 export default function RootLayout({
@@ -24,7 +23,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" style={{ height: "100%" }}>
+    <html lang="ja" className="h-full">
       <head>
         <link
           rel="icon"
@@ -33,10 +32,7 @@ export default function RootLayout({
           sizes="32x32"
         />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#18181b]`}
-        style={{ }}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased h-full`}>
         <ClientRoot>{children}</ClientRoot>
       </body>
     </html>
