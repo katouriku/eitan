@@ -158,7 +158,7 @@ export default function ContactPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full px-8 py-4 rounded-full font-bold text-lg bg-[#3881ff] text-white shadow-lg hover:bg-[#5a9eff] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-200/50"
+          className="btn-primary w-full px-8 py-4 text-lg"
         >
           {loading ? "送信中..." : "メッセージを送信"}
         </button>
