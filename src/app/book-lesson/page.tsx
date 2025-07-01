@@ -267,30 +267,29 @@ export default function BookLessonPage() {
 
   // --- New: Fetch all booked slots for the next 30 days ---
   const [allBookedSlots, setAllBookedSlots] = useState<Record<string, string[]>>({}); // { 'YYYY-MM-DD': ['HH:mm', ...] }
-  useEffect(() => {
-    async function fetchAllBooked() {
-      const today = new Date();
-      const start = today.toISOString().slice(0, 10);
-      const endDate = new Date(today);
-      endDate.setDate(today.getDate() + 29);
-      const end = endDate.toISOString().slice(0, 10);
-      const res = await fetch(`/api/booking?start=${start}&end=${end}`);
-      const data = await res.json();
-      // Group by date
-      const grouped: Record<string, string[]> = {};
-      if (Array.isArray(data.bookings)) {
-        for (const b of data.bookings) {
-          const d = new Date(b.date);
-          // Use local time for date and time string
-          const dateStr = d.getFullYear() + '-' + (d.getMonth() + 1).toString().padStart(2, '0') + '-' + d.getDate().toString().padStart(2, '0');
-          const timeStr = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
-          if (!grouped[dateStr]) grouped[dateStr] = [];
-          grouped[dateStr].push(timeStr);
-        }
+
+  // Function to refresh booked slots after a successful booking
+  const refreshBookedSlots = useCallback(async () => {
+    const today = new Date();
+    const start = today.toISOString().slice(0, 10);
+    const endDate = new Date(today);
+    endDate.setDate(today.getDate() + 29);
+    const end = endDate.toISOString().slice(0, 10);
+    const res = await fetch(`/api/booking?start=${start}&end=${end}`);
+    const data = await res.json();
+    // Group by date
+    const grouped: Record<string, string[]> = {};
+    if (Array.isArray(data.bookings)) {
+      for (const b of data.bookings) {
+        const d = new Date(b.date);
+        // Use local time for date and time string
+        const dateStr = d.getFullYear() + '-' + (d.getMonth() + 1).toString().padStart(2, '0') + '-' + d.getDate().toString().padStart(2, '0');
+        const timeStr = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+        if (!grouped[dateStr]) grouped[dateStr] = [];
+        grouped[dateStr].push(timeStr);
       }
-      setAllBookedSlots(grouped);
     }
-    fetchAllBooked();
+    setAllBookedSlots(grouped);
   }, []);
 
   // For a selected date, get all 1-hour slots from available ranges
@@ -425,7 +424,10 @@ export default function BookLessonPage() {
           duration: 60,
           details: `レッスン種別: ${lessonType}, 参加者数: ${participants}`
         });
-        if (emailSent) setStep(3);
+        if (emailSent) {
+          await refreshBookedSlots(); // Refresh the UI
+          setStep(3);
+        }
       } else if (data.clientSecret) {
         setClientSecret(data.clientSecret);
         setStep(2);
@@ -454,7 +456,11 @@ export default function BookLessonPage() {
       duration: 60,
       details: `レッスン種別: ${lessonType}, 参加者数: ${participants}`
     });
-    if (emailSent) setStep(3);
+    if (emailSent) {
+      setStep(3);
+      // Refresh booked slots to update UI
+      await refreshBookedSlots();
+    }
   }
 
   // Progress bar component

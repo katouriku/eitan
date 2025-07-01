@@ -1,15 +1,99 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { AvailabilityService } from '@/lib/supabase';
 
 export async function GET() {
-  const availabilities = await prisma.availability.findMany();
-  // Group by day for frontend compatibility
-  const grouped = availabilities.reduce((acc, curr) => {
-    if (!acc[curr.day]) acc[curr.day] = [];
-    acc[curr.day].push({ start: curr.startTime, end: curr.endTime });
-    return acc;
-  }, {} as Record<string, { start: string; end: string }[]>);
-  // Convert to array format expected by frontend
-  const result = Object.entries(grouped).map(([day, ranges]) => ({ day, ranges }));
-  return NextResponse.json({ weeklyAvailability: result });
+  try {
+    // Try to initialize default availability if needed
+    try {
+      await AvailabilityService.initializeDefaultAvailability();
+    } catch {
+      console.log('Availability table may not exist yet, using fallback schedule');
+      // Return fallback availability if table doesn't exist
+      return NextResponse.json({ 
+        weeklyAvailability: getFallbackAvailability() 
+      });
+    }
+    
+    // Get availability from Supabase
+    const weeklyAvailability = await AvailabilityService.getWeeklyAvailability();
+    
+    return NextResponse.json({ weeklyAvailability });
+  } catch (error) {
+    console.error('Error fetching availability:', error);
+    
+    // Return fallback availability on any error
+    return NextResponse.json({ 
+      weeklyAvailability: getFallbackAvailability() 
+    });
+  }
+}
+
+function getFallbackAvailability() {
+  return [
+    {
+      day: 'Monday',
+      ranges: [
+        { start: '12:00', end: '13:00' },
+        { start: '13:00', end: '14:00' },
+        { start: '14:00', end: '15:00' },
+        { start: '15:00', end: '16:00' },
+        { start: '16:00', end: '17:00' },
+        { start: '17:00', end: '18:00' },
+        { start: '18:00', end: '19:00' },
+        { start: '19:00', end: '20:00' }
+      ]
+    },
+    {
+      day: 'Tuesday',
+      ranges: [
+        { start: '12:00', end: '13:00' },
+        { start: '13:00', end: '14:00' },
+        { start: '14:00', end: '15:00' },
+        { start: '15:00', end: '16:00' },
+        { start: '16:00', end: '17:00' },
+        { start: '17:00', end: '18:00' },
+        { start: '18:00', end: '19:00' },
+        { start: '19:00', end: '20:00' }
+      ]
+    },
+    {
+      day: 'Wednesday',
+      ranges: [
+        { start: '12:00', end: '13:00' },
+        { start: '13:00', end: '14:00' },
+        { start: '14:00', end: '15:00' },
+        { start: '15:00', end: '16:00' },
+        { start: '16:00', end: '17:00' },
+        { start: '17:00', end: '18:00' },
+        { start: '18:00', end: '19:00' },
+        { start: '19:00', end: '20:00' }
+      ]
+    },
+    {
+      day: 'Thursday',
+      ranges: [
+        { start: '12:00', end: '13:00' },
+        { start: '13:00', end: '14:00' },
+        { start: '14:00', end: '15:00' },
+        { start: '15:00', end: '16:00' },
+        { start: '16:00', end: '17:00' },
+        { start: '17:00', end: '18:00' },
+        { start: '18:00', end: '19:00' },
+        { start: '19:00', end: '20:00' }
+      ]
+    },
+    {
+      day: 'Friday',
+      ranges: [
+        { start: '12:00', end: '13:00' },
+        { start: '13:00', end: '14:00' },
+        { start: '14:00', end: '15:00' },
+        { start: '15:00', end: '16:00' },
+        { start: '16:00', end: '17:00' },
+        { start: '17:00', end: '18:00' },
+        { start: '18:00', end: '19:00' },
+        { start: '19:00', end: '20:00' }
+      ]
+    }
+  ];
 }

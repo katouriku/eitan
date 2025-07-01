@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { Resend } from 'resend';
+import { BookingService } from '@/lib/supabase';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -20,29 +20,6 @@ export async function POST(req: NextRequest) {
   console.log('Booking request:', { name, kana, email, date, duration, details, lessonType, participants, coupon, regularPrice, discountAmount, finalPrice });
   const start = new Date(date);
   const end = new Date(start.getTime() + (duration || 60) * 60000); // default 60 min
-
-  // Save booking to DB (with double-booking prevention)
-  try {
-    await prisma.booking.create({
-      data: {
-        date: start,
-        participantCount: participants,
-        customerName: name,
-        customerKana: kana,
-        customerEmail: email,
-        couponCode: coupon,
-        couponDiscount: discountAmount,
-        price: finalPrice,
-        status: 'paid', // or 'pending' if you want to handle payment status
-        notes: details,
-      },
-    });
-  } catch (e) {
-    if (e.code === 'P2002') {
-      return NextResponse.json({ ok: false, error: 'Time slot already booked' }, { status: 409 });
-    }
-    return NextResponse.json({ ok: false, error: e.message || 'Unknown error' }, { status: 500 });
-  }
 
   const icsContentUser = createICS({
     summary: 'レッスン＠エイタン',
@@ -143,6 +120,34 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error('Error sending admin notification email:', err);
     // Don't fail the whole request if admin notification fails
+  }
+
+  // Store booking in database
+  try {
+    const bookingData = {
+      name,
+      kana,
+      email,
+      date: start.toISOString(),
+      duration: duration || 60,
+      details: details || '',
+      lesson_type: lessonType as 'online' | 'in-person',
+      participants: participants || 1,
+      coupon: coupon || undefined,
+      regular_price: regularPrice || 0,
+      discount_amount: discountAmount || 0,
+      final_price: finalPrice || 0
+    }
+    
+    console.log('Attempting to save booking with data:', bookingData)
+    const savedBooking = await BookingService.createBooking(bookingData)
+    console.log('Booking saved to database successfully:', savedBooking.id)
+  } catch (err) {
+    console.error('Error saving booking to database:', {
+      message: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined
+    })
+    // Don't fail the request if database save fails, since emails were sent
   }
 
   return NextResponse.json({ ok: true });

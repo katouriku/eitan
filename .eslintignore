@@ -1,2 +1,1 @@
-# Ignore Prisma generated client (auto-generated, do not lint)
-src/generated/prisma/
+# ESLint ignore patterns
