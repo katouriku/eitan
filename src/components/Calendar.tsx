@@ -151,36 +151,20 @@ const Calendar: React.FC<CalendarProps> = ({
                     ? 'bg-[#3881ff] text-white font-bold shadow-lg ring-2 ring-[#3881ff]/50'
                     : 'text-white bg-gray-700 hover:bg-[#3881ff] hover:text-white border border-gray-600 hover:border-[#3881ff]'
                   : fullyBooked && available
-                  ? 'text-gray-400 bg-gray-700/50 border border-gray-600 cursor-not-allowed'
+                  ? 'text-gray-400 bg-gray-700/50 border border-gray-600 cursor-not-allowed line-through'
                   : 'text-gray-500 cursor-not-allowed'
                 }
               `}
             >
-              {date.getDate()}
+              <span className={fullyBooked && available && currentMonth && !past ? 'line-through' : ''}>
+                {date.getDate()}
+              </span>
               {fullyBooked && available && currentMonth && !past && (
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-gray-800"></div>
               )}
             </button>
           );
         })}
-      </div>
-
-      {/* Legend */}
-      <div className="mt-4 space-y-2 text-xs text-gray-400">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-[#3881ff] rounded"></div>
-          <span>選択済み</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-gray-700 border border-gray-600 rounded"></div>
-          <span>予約可能</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-gray-700/50 border border-gray-600 rounded relative">
-            <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full"></div>
-          </div>
-          <span>満席</span>
-        </div>
       </div>
     </div>
   );

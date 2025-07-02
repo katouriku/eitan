@@ -42,7 +42,7 @@ export default function PricingPage() {
     <div className="space-y-12">
       <div className="text-center">
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#3881ff] leading-tight">
-          料金プラン
+          レッスンの種類
         </h1>
       </div>
       
@@ -78,7 +78,7 @@ export default function PricingPage() {
               
               <div className="text-2xl lg:text-3xl font-bold text-[#3881ff]">
                 {pricing.price}
-                <span className="text-lg text-gray-400 font-normal">
+                <span className="text-sm text-gray-400 font-normal"><br />
                   {pricing.unit}
                 </span>
               </div>

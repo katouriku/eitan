@@ -165,15 +165,32 @@ export default function BookLessonPage() {
     
     const res = await fetch(`/api/booking?start=${start}&end=${end}`);
     const data = await res.json();
+    
     // Group by date
     const grouped: Record<string, string[]> = {};
     if (Array.isArray(data.bookings)) {
       for (const b of data.bookings) {
-        // Parse the UTC date string directly without timezone conversion
-        const dateStr = b.date.slice(0, 10); // Extract YYYY-MM-DD from "2025-07-03T14:00:00+00:00"
-        const timeStr = b.date.slice(11, 16); // Extract HH:MM from "2025-07-03T14:00:00+00:00"
-        if (!grouped[dateStr]) grouped[dateStr] = [];
-        grouped[dateStr].push(timeStr);
+        // Convert UTC time to JST using proper timezone conversion
+        const utcDate = new Date(b.date);
+        
+        // Get JST date and time
+        const jstDateStr = utcDate.toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' }); // YYYY-MM-DD format
+        const jstTimeStr = utcDate.toLocaleTimeString('en-GB', { 
+          timeZone: 'Asia/Tokyo',
+          hour12: false,
+          hour: '2-digit',
+          minute: '2-digit'
+        }); // HH:MM format
+        
+        console.log('Processing booking:', { 
+          original: b.date, 
+          utcDate: utcDate.toISOString(), 
+          jstDateStr, 
+          jstTimeStr 
+        });
+        
+        if (!grouped[jstDateStr]) grouped[jstDateStr] = [];
+        grouped[jstDateStr].push(jstTimeStr);
       }
     }
     setAllBookedSlots(grouped);
@@ -487,6 +504,9 @@ export default function BookLessonPage() {
     if (/^\d{1}:/.test(time24)) {
       time24 = time24.padStart(5, '0');
     }
+    
+    // Create a proper date in Japan timezone (JST is UTC+9)
+    const bookingDateTime = `${selectedDate}T${time24}:00+09:00`;
 
     try {
       const res = await fetch("/api/create-payment-intent", {
@@ -501,7 +521,7 @@ export default function BookLessonPage() {
           name: nameValue,
           email: emailValue,
           kana: kanaValue,
-          date: `${selectedDate}T${time24}:00`,
+          date: bookingDateTime,
           duration: 60,
           details: `レッスン種別: ${lessonType}, 参加者数: ${participants}`
         });
@@ -529,11 +549,19 @@ export default function BookLessonPage() {
     const kanaValue = customerKana;
     const dateValue = selectedDate;
     const timeValue = selectedTime;
+    
+    // Create proper timezone-aware date
+    let time24 = timeValue.split(' - ')[0];
+    if (/^\d{1}:/.test(time24)) {
+      time24 = time24.padStart(5, '0');
+    }
+    const bookingDateTime = `${dateValue}T${time24}:00+09:00`;
+    
     const emailSent = await sendBookingEmail({
       name: nameValue,
       email: emailValue,
       kana: kanaValue,
-      date: `${dateValue}T${timeValue.split(' - ')[0]}:00`,
+      date: bookingDateTime,
       duration: 60,
       details: `レッスン種別: ${lessonType}, 参加者数: ${participants}`
     });
@@ -794,6 +822,8 @@ export default function BookLessonPage() {
                         value={customerEmail}
                         onChange={(e) => setCustomerEmail(e.target.value)}
                         placeholder="例: your@email.com"
+                        pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                        title="有効なメールアドレスを入力してください"
                         className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] min-w-0"
                         required
                       />
@@ -828,7 +858,7 @@ export default function BookLessonPage() {
                   <div className={`flex flex-col lg:flex-row lg:gap-6 space-y-6 lg:space-y-0 w-full transition-all duration-700 ease-out ${
                     selectedDate ? 'lg:justify-start' : 'lg:justify-center'
                   }`}>
-                    {/* Calendar Section - Fixed width */}
+                    {/* Calendar Section */}
                     <div className="lg:w-80 lg:flex-shrink-0">
                       <Calendar
                         availableDates={getAvailableDates()}
@@ -839,6 +869,14 @@ export default function BookLessonPage() {
                         }}
                         fullyBookedDates={getAvailableDates().filter(date => isDateFullyBooked(date))}
                       />
+                      {/* Return button positioned below calendar on desktop only */}
+                      <button
+                        type="button"
+                        onClick={() => setSubstep(2)}
+                        className="btn-danger w-full mt-4 hidden lg:block"
+                      >
+                        戻る
+                      </button>
                     </div>
                     
                     {/* Time Selection Section - Animates in when date selected */}
@@ -853,7 +891,7 @@ export default function BookLessonPage() {
                             <div 
                               className="grid gap-2 w-full"
                               style={{
-                                gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
                                 maxHeight: '400px', // Match approximate calendar height
                                 gridAutoFlow: 'column',
                                 gridTemplateRows: 'repeat(8, minmax(45px, auto))'
@@ -864,30 +902,27 @@ export default function BookLessonPage() {
                                   key={slot.value}
                                   type="button"
                                   onClick={() => {
-                                    setSelectedTime(slot.value);
-                                    // Auto-advance to next step when time is selected
-                                    setTimeout(() => setSubstep(4), 300);
+                                    if (!slot.disabled) {
+                                      setSelectedTime(slot.value);
+                                      // Auto-advance to next step when time is selected
+                                      setTimeout(() => setSubstep(4), 300);
+                                    }
                                   }}
                                   disabled={slot.disabled}
                                   className={`
                                     px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-300 border-2 whitespace-nowrap h-[46px] relative shadow-lg
                                     ${slot.disabled
-                                      ? 'bg-gray-700/60 text-gray-400 border-gray-600 cursor-not-allowed opacity-50'
+                                      ? 'bg-red-900/60 text-red-300 border-red-700/60 cursor-not-allowed opacity-80 line-through decoration-red-400 decoration-2'
                                       : selectedTime === slot.value
                                       ? 'bg-gradient-to-br from-[#3881ff] to-[#5a9eff] text-white border-[#3881ff] shadow-xl ring-2 ring-[#3881ff]/40 transform scale-105 z-10'
                                       : 'bg-gradient-to-br from-gray-700 to-gray-800 text-white border-gray-600 hover:from-[#3881ff] hover:to-[#5a9eff] hover:border-[#3881ff] hover:shadow-xl hover:transform hover:scale-105 hover:ring-2 hover:ring-[#3881ff]/30'
                                     }
                                   `}
                                 >
-                                  <div className="flex flex-col items-center justify-center gap-1">
+                                  <div className="flex items-center justify-center">
                                     <span className="font-semibold text-sm leading-tight">
                                       {slot.disabled ? slot.label.replace('（予約済み）', '') : slot.label}
                                     </span>
-                                    {slot.disabled && (
-                                      <span className="text-red-400 text-xs font-bold px-1 py-0.5 bg-red-900/20 rounded">
-                                        予約済み
-                                      </span>
-                                    )}
                                   </div>
                                 </button>
                               ))}
@@ -903,15 +938,12 @@ export default function BookLessonPage() {
                     </div>
                   </div>
                   
-                  <div className="mt-6">
+                  {/* Return button for mobile - appears below timeslots */}
+                  <div className="mt-10 lg:hidden flex justify-center">
                     <button
                       type="button"
                       onClick={() => setSubstep(2)}
-                      className={`btn-danger transition-all duration-700 ease-out ${
-                        selectedDate 
-                          ? 'w-full' // Full width when time slots are shown
-                          : 'w-80 mx-auto block lg:w-80' // Calendar width when only calendar is shown
-                      }`}
+                      className="btn-danger w-full px-8 py-2"
                     >
                       戻る
                     </button>
@@ -928,10 +960,10 @@ export default function BookLessonPage() {
                   <input type="hidden" name="email" value={customerEmail} />
                   <input type="hidden" name="participants" value={participants} />
                   
-                  <h3 className="text-xl text-white mb-6 text-center font-bold">料金確認・お支払い</h3>
+                  <h3 className="text-xl text-white text-center font-bold">料金確認・お支払い</h3>
                   
                   {/* Summary */}
-                  <div className="bg-gray-800/50 p-3 rounded-lg mb-4 space-y-1 text-sm">
+                  <div className="bg-gray-800/50 p-3 mt-3 rounded-lg mb-4 space-y-1 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-300">レッスン形式:</span>
                       <span className="text-white">{lessonType === 'online' ? 'オンライン' : '対面'}</span>
@@ -967,13 +999,6 @@ export default function BookLessonPage() {
                         </button>
                       </div>
                     </div>
-
-                    <div className="text-center py-3">
-                      <div className="text-xl font-bold text-[#3881ff]">
-                        合計: {getDisplayPrice()}
-                      </div>
-                      {priceError && <div className="text-red-400 text-xs mt-1">{priceError}</div>}
-                    </div>
                   </div>
 
                   {formError && <div className="text-red-400 text-center mb-3 text-sm">{formError}</div>}
@@ -991,7 +1016,7 @@ export default function BookLessonPage() {
                       disabled={formLoading}
                       className="btn-primary flex-1"
                     >
-                      {formLoading ? "処理中..." : finalPrice === 0 ? "予約確定" : "支払いへ進む"}
+                      {formLoading ? "処理中..." : finalPrice === 0 ? "予約確定" : "支払い"}
                     </button>
                   </div>
                 </form>
