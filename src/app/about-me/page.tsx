@@ -9,7 +9,6 @@ import Link from "next/link";
 import { PortableText } from "@portabletext/react";
 import type { PortableTextBlock } from "@portabletext/types";
 import LoadingAnimation from "../../components/LoadingAnimation";
-import { useLoading } from "../../contexts/LoadingContext";
 
 export default function AboutMePage() {
   const [about, setAbout] = useState<{ 
