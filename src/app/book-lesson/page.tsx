@@ -9,6 +9,7 @@ import "../globals.css";
 import { useStripe, useElements } from "@stripe/react-stripe-js";
 import { useQueryParam } from "./useQueryParam";
 import Calendar from "../../components/Calendar";
+import LoadingAnimation from "../../components/LoadingAnimation";
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 // Types for new schema
@@ -664,11 +665,7 @@ export default function BookLessonPage() {
 
   // Move this after all hooks
   if (isLoading) {
-    return (
-      <main className="flex flex-col flex-1 min-w-0 w-full min-h-[100vh] pt-20">
-        <div className="text-2xl text-gray-400">ロード中...</div>
-      </main>
-    );
+    return <LoadingAnimation fullScreen={false} />;
   }
 
   return (

@@ -8,6 +8,8 @@ import { urlFor } from "@/sanity/lib/image";
 import Link from "next/link";
 import { PortableText } from "@portabletext/react";
 import type { PortableTextBlock } from "@portabletext/types";
+import LoadingAnimation from "../../components/LoadingAnimation";
+import { useLoading } from "../../contexts/LoadingContext";
 
 export default function AboutMePage() {
   const [about, setAbout] = useState<{ 
@@ -34,11 +36,7 @@ export default function AboutMePage() {
   const isLoading = !about.bio.length && !about.headshot;
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="text-xl text-gray-400">ロード中...</div>
-      </div>
-    );
+    return <LoadingAnimation message="プロフィールを読み込み中" fullScreen={false} />;
   }
 
   return (

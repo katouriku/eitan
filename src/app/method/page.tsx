@@ -7,6 +7,7 @@ import Image from "next/image";
 import { urlFor } from "@/sanity/lib/image";
 import { PortableText } from "@portabletext/react";
 import Link from "next/link";
+import LoadingAnimation from "../../components/LoadingAnimation";
 
 type MethodData = {
   title: string;
@@ -34,11 +35,7 @@ export default function MethodPage() {
   const isLoading = !method.title && !method.content;
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="text-xl text-gray-400">ロード中...</div>
-      </div>
-    );
+    return <LoadingAnimation message="教育方法を読み込み中" fullScreen={false} />;
   }
 
   return (

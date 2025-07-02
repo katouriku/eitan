@@ -395,3 +395,16 @@ img {
     margin-top: -17px; /* Center 32px circles */
   }
 }
+
+/* Custom animation delay classes for staggered loading animations */
+.animation-delay-150 {
+  animation-delay: 150ms;
+}
+
+.animation-delay-200 {
+  animation-delay: 200ms;
+}
+
+.animation-delay-400 {
+  animation-delay: 400ms;
+}
