@@ -518,32 +518,31 @@ export default function BookLessonPage() {
       <div className="w-full max-w-4xl mx-auto mb-8 px-6 progress-container">
         <div className="relative">
           {/* Progress bar container */}
-          <div className="relative" style={{ height: '50px' }}>
+          <div className="relative progress-bar-height">
             {/* Background progress line */}
             <div 
-              className="absolute h-6 bg-gray-700 rounded-full"
+              className="absolute bg-gray-700 rounded-full progress-bar-line"
               style={{ 
-                left: '25px', 
-                right: '25px', 
-                top: '75%', 
+                top: '100%', 
+                transform: 'translateY(-50%)',
                 zIndex: 1
               }}
             />
             
             {/* Active progress line */}
             <div 
-              className="absolute h-6 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] rounded-full transition-all duration-500 ease-out"
+              className="absolute bg-gradient-to-r from-[#3881ff] to-[#5a9eff] rounded-full transition-all duration-500 ease-out progress-bar-active"
               style={{ 
-                left: '25px',
-                top: '75%',
-                width: currentStep === 1 ? '0px' : `calc((100% - 50px) * ${(currentStep - 1) / 5})`,
+                top: '100%',
+                transform: 'translateY(-50%)',
+                width: currentStep === 1 ? '0px' : `calc((100% - var(--progress-offset, 50px)) * ${(currentStep - 1) / 5})`,
                 zIndex: 2
               }}
             />
           </div>
           
           {/* Step circles and labels combined */}
-          <div className="flex items-start justify-between" style={{ paddingLeft: '25px', paddingRight: '25px', marginTop: '-25px' }}>
+          <div className="flex items-start justify-between progress-bar-container progress-bar-margin">
             {[1, 2, 3, 4, 5, 6].map((stepNum) => (
               <div key={stepNum} className="flex flex-col items-center">
                 <button

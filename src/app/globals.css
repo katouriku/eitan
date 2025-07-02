@@ -217,7 +217,7 @@ img {
 /* Progress Bar Mobile Responsive Styles */
 @media (max-width: 768px) {
   .progress-container {
-    padding: 0 1rem;
+    padding: 0 0.75rem;
     max-width: 100%;
   }
   
@@ -234,6 +234,10 @@ img {
 }
 
 @media (max-width: 480px) {
+  .progress-container {
+    padding: 0 0.5rem;
+  }
+  
   .progress-step-label {
     font-size: 0.625rem; /* 10px */
     width: 32px !important;
@@ -274,4 +278,89 @@ img {
 
 .progress-step-circle:disabled {
   cursor: not-allowed;
+}
+
+/* Progress Bar Responsive Positioning */
+.progress-bar-line {
+  left: 25px;
+  right: 25px;
+  height: 24px; /* Default bar thickness for 48px circles */
+}
+
+.progress-bar-container {
+  padding-left: 25px;
+  padding-right: 25px;
+}
+
+.progress-bar-active {
+  left: 25px;
+  height: 24px; /* Match background line */
+  --progress-offset: 50px;
+}
+
+@media (max-width: 768px) {
+  .progress-bar-line {
+    left: 20px;
+    right: 20px;
+    height: 20px; /* Thinner bar for 40px circles */
+  }
+  
+  .progress-bar-container {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+  
+  .progress-bar-active {
+    left: 20px;
+    height: 20px; /* Match background line */
+    --progress-offset: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .progress-bar-line {
+    left: 16px;
+    right: 16px;
+    height: 16px; /* Thinnest bar for 32px circles */
+  }
+  
+  .progress-bar-container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  
+  .progress-bar-active {
+    left: 16px;
+    height: 16px; /* Match background line */
+    --progress-offset: 32px;
+  }
+}
+
+/* Progress Bar Container Responsive */
+.progress-bar-height {
+  height: 50px; /* Container for 48px circles */
+}
+
+.progress-bar-margin {
+  margin-top: -25px; /* Center 48px circles */
+}
+
+@media (max-width: 768px) {
+  .progress-bar-height {
+    height: 42px; /* Container for 40px circles */
+  }
+  
+  .progress-bar-margin {
+    margin-top: -21px; /* Center 40px circles */
+  }
+}
+
+@media (max-width: 480px) {
+  .progress-bar-height {
+    height: 34px; /* Container for 32px circles */
+  }
+  
+  .progress-bar-margin {
+    margin-top: -17px; /* Center 32px circles */
+  }
 }
