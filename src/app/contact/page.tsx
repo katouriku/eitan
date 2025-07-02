@@ -52,18 +52,18 @@ export default function ContactPage() {
 
   if (success) {
     return (
-      <div className="text-center space-y-6">
-        <div className="text-6xl">✅</div>
-        <h1 className="text-3xl sm:text-4xl font-bold text-[#3881ff]">
-          メッセージを送信しました
-        </h1>
-        <p className="text-lg text-gray-300">
+      <div className="bg-gray-900/50 border border-gray-800 p-8 rounded-2xl shadow-xl w-full flex flex-col items-center gap-6 max-w-lg mx-auto min-h-0 min-w-0 max-h-[90vh] justify-center hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
+        <svg className="w-16 h-16 text-green-400 mb-2" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+        <div className="text-green-400 font-bold text-2xl mb-2">送信完了!</div>
+        <div className="text-gray-300 text-center">
           お問い合わせいただきありがとうございます。<br />
           24時間以内にご返信いたします。
-        </p>
+        </div>
         <button
           onClick={() => setSuccess(false)}
-          className="px-6 py-3 rounded-lg bg-[#3881ff] text-white hover:bg-[#5a9eff] transition-colors"
+          className="btn-primary mt-4"
         >
           新しいメッセージを送る
         </button>

@@ -64,12 +64,6 @@ export async function POST(req: NextRequest) {
           <td style="padding: 8px 0; font-weight: bold; color: #555;">参加者数：</td>
           <td style="padding: 8px 0; color: #333;">${participants}名</td>
         </tr>
-        ${details ? `
-        <tr>
-          <td style="padding: 8px 0; font-weight: bold; color: #555; vertical-align: top;">ご要望：</td>
-          <td style="padding: 8px 0; color: #333;">${details}</td>
-        </tr>
-        ` : ''}
       </table>
     </div>
   `;

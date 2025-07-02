@@ -145,7 +145,7 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
             </div>
           </div>
         )}
-        <main className="flex-1 flex flex-col pt-20 sm:pt-24 min-h-0">
+        <main className={`flex-1 flex flex-col min-h-0 ${pathname === '/book-lesson' ? 'pt-16 sm:pt-6' : 'pt-20 sm:pt-20'}`}>
           {pathname === "/" ? (
             <section className="flex-1 flex items-center justify-center px-4 sm:px-6 min-h-0">
               <div className="max-w-4xl mx-auto text-center">

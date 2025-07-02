@@ -8,6 +8,7 @@ import Cookies from "js-cookie";
 import "../globals.css";
 import { useStripe, useElements } from "@stripe/react-stripe-js";
 import { useQueryParam } from "./useQueryParam";
+import Calendar from "../../components/Calendar";
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 // Types for new schema
@@ -152,10 +153,16 @@ export default function BookLessonPage() {
   // Function to refresh booked slots after a successful booking
   const refreshBookedSlots = useCallback(async () => {
     const today = new Date();
-    const start = today.toISOString().slice(0, 10);
-    const endDate = new Date(today);
-    endDate.setDate(today.getDate() + 29);
-    const end = endDate.toISOString().slice(0, 10);
+    // Start from 3 days in the future to match available dates
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() + 3);
+    const start = formatDateString(startDate);
+    
+    // End 30 days from the start date
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 29);
+    const end = formatDateString(endDate);
+    
     const res = await fetch(`/api/booking?start=${start}&end=${end}`);
     const data = await res.json();
     // Group by date
@@ -193,22 +200,74 @@ export default function BookLessonPage() {
     refreshBookedSlots();
   }, [refreshBookedSlots]);
 
-  // Try to load from cookies on mount
+  // Try to load from cookies on mount and restore state
   useEffect(() => {
     const savedName = Cookies.get("booking_name") || "";
+    const savedKana = Cookies.get("booking_kana") || "";
     const savedEmail = Cookies.get("booking_email") || "";
     const savedDate = Cookies.get("booking_date") || "";
     const savedTime = Cookies.get("booking_time") || "";
-    // Prefill fields but do not auto-advance
-    if (savedName) setSelectedDate(savedDate);
-    if (savedEmail) setSelectedTime(savedTime);
-  }, []);
+    const savedParticipants = Cookies.get("booking_participants");
+    const savedLessonType = Cookies.get("booking_lessonType") as "online" | "in-person" | "";
+    
+    // Restore form data
+    if (savedName) setCustomerName(savedName);
+    if (savedKana) setCustomerKana(savedKana);
+    if (savedEmail) setCustomerEmail(savedEmail);
+    if (savedDate) setSelectedDate(savedDate);
+    if (savedTime) setSelectedTime(savedTime);
+    if (savedParticipants) setParticipants(parseInt(savedParticipants));
+    if (savedLessonType) setLessonType(savedLessonType);
+    
+    // Restore progress - advance to appropriate substep if data exists
+    if (savedLessonType && !lessonTypeParam) {
+      if (savedName && savedKana && savedEmail && savedDate && savedTime) {
+        setSubstep(4); // Go to payment step if all info is filled
+      } else if (savedName && savedKana && savedEmail) {
+        setSubstep(3); // Go to date/time step if contact info is filled
+      } else if (savedParticipants) {
+        setSubstep(2); // Go to contact step if participants is set
+      } else {
+        setSubstep(1); // Start with participants
+      }
+    }
+  }, [lessonTypeParam]);
 
-  // Clear date and time cookies after booking confirmation
+  // Save form data to cookies when it changes
+  useEffect(() => {
+    if (customerName) Cookies.set("booking_name", customerName, { expires: 30 });
+  }, [customerName]);
+  
+  useEffect(() => {
+    if (customerKana) Cookies.set("booking_kana", customerKana, { expires: 30 });
+  }, [customerKana]);
+  
+  useEffect(() => {
+    if (customerEmail) Cookies.set("booking_email", customerEmail, { expires: 30 });
+  }, [customerEmail]);
+  
+  useEffect(() => {
+    if (selectedDate) Cookies.set("booking_date", selectedDate, { expires: 30 });
+  }, [selectedDate]);
+  
+  useEffect(() => {
+    if (selectedTime) Cookies.set("booking_time", selectedTime, { expires: 30 });
+  }, [selectedTime]);
+  
+  useEffect(() => {
+    if (participants) Cookies.set("booking_participants", participants.toString(), { expires: 30 });
+  }, [participants]);
+  
+  // Clear all booking cookies after booking confirmation
   useEffect(() => {
     if (step === 3) {
+      Cookies.remove("booking_name");
+      Cookies.remove("booking_kana");
+      Cookies.remove("booking_email");
       Cookies.remove("booking_date");
       Cookies.remove("booking_time");
+      Cookies.remove("booking_participants");
+      Cookies.remove("booking_lessonType");
     }
   }, [step]);
 
@@ -261,17 +320,25 @@ export default function BookLessonPage() {
     sunday: 0,
   };
 
-  // Generate available dates for next 30 days
+  // Helper function to format date safely without timezone issues
+  function formatDateString(date: Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  // Generate available dates starting 3 days from now (30 days total)
   function getAvailableDates() {
     const today = new Date();
     const dates: string[] = [];
-    for (let i = 0; i < 30; i++) {
+    for (let i = 3; i < 33; i++) { // Start from day 3, go to day 32 (30 days total)
       const d = new Date(today);
       d.setDate(today.getDate() + i);
       const weekday = d.getDay();
       // Find if this weekday is available
       if (weeklyAvailability.some((a) => dayToIndex[a.day.toLowerCase()] === weekday)) {
-        dates.push(d.toISOString().slice(0, 10)); // YYYY-MM-DD
+        dates.push(formatDateString(d)); // Use timezone-safe formatting
       }
     }
     return dates;
@@ -407,15 +474,12 @@ export default function BookLessonPage() {
       setFormLoading(false);
       return;
     }
-    // Save to cookies
+    
+    // Get form values
     const form = e.currentTarget as HTMLFormElement;
-    const nameValue = (form.elements.namedItem("name") as HTMLInputElement)?.value || "";
-    const emailValue = (form.elements.namedItem("email") as HTMLInputElement)?.value || "";
-    const kanaValue = (form.elements.namedItem("kana") as HTMLInputElement)?.value || "";
-    Cookies.set("booking_name", nameValue, { expires: 7 });
-    Cookies.set("booking_email", emailValue, { expires: 7 });
-    Cookies.set("booking_date", selectedDate, { expires: 7 });
-    Cookies.set("booking_time", selectedTime, { expires: 7 });
+    const nameValue = (form.elements.namedItem("name") as HTMLInputElement)?.value || customerName;
+    const emailValue = (form.elements.namedItem("email") as HTMLInputElement)?.value || customerEmail;
+    const kanaValue = (form.elements.namedItem("kana") as HTMLInputElement)?.value || customerKana;
 
     // --- Fix: Ensure 24-hour time is always sent ---
     let time24 = selectedTime.split(' - ')[0];
@@ -460,11 +524,11 @@ export default function BookLessonPage() {
 
   // After successful payment, send booking email and go to confirmation
   async function handlePaymentSuccess() {
-    const nameValue = Cookies.get("booking_name") || "";
-    const emailValue = Cookies.get("booking_email") || "";
-    const kanaValue = (document.getElementsByName("kana")[0] as HTMLInputElement)?.value || "";
-    const dateValue = Cookies.get("booking_date") || "";
-    const timeValue = Cookies.get("booking_time") || "";
+    const nameValue = customerName;
+    const emailValue = customerEmail;
+    const kanaValue = customerKana;
+    const dateValue = selectedDate;
+    const timeValue = selectedTime;
     const emailSent = await sendBookingEmail({
       name: nameValue,
       email: emailValue,
@@ -515,7 +579,7 @@ export default function BookLessonPage() {
     };
     
     return (
-      <div className="w-full max-w-4xl mx-auto mb-8 px-6 progress-container">
+      <div className="w-full max-w-4xl mx-auto mb-4 px-6 progress-container">
         <div className="relative">
           {/* Progress bar container */}
           <div className="relative progress-bar-height">
@@ -583,31 +647,34 @@ export default function BookLessonPage() {
     <main className="flex flex-col flex-1 min-w-0 w-full">
       <section className="flex flex-col items-center justify-center w-full px-4">
         <div className="flex flex-col items-center justify-center max-w-2xl min-w-[340px] w-full order-2 md:order-none min-h-0">
-          <span
-            className="font-extrabold text-2xl sm:text-3xl md:text-4xl text-[#3881ff] mb-4 text-center w-full">
-            レッスンを予約
-          </span>
-          {/* Price display and participant count, side-by-side on desktop - only show after lesson type selected */}
-          {lessonType && (
-            <>
-              <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 mb-2">
+          <ProgressBar step={step} substep={step === 1 ? substep : undefined} />
+          
+          {/* Price display - always reserve space to prevent layout shifts */}
+          <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 mb-4 min-h-[2rem]">
+            {lessonType && (
+              <>
                 <div className="text-base sm:text-lg font-bold text-gray-200 flex flex-row items-center gap-2">
                   <span>合計金額(税込み): <span className="text-[#3881ff] text-xl sm:text-2xl font-extrabold">{getDisplayPrice()}</span></span>
                 </div>
                 <div className="text-xs sm:text-sm text-gray-400 flex flex-row items-center">
                   (参加者数: {participants}名)
                 </div>
-              </div>
-              {priceError && (
-                <div className="text-red-400 text-sm font-bold text-center mb-2">{priceError}</div>
-              )}
-            </>
+              </>
+            )}
+          </div>
+          {lessonType && priceError && (
+            <div className="text-red-400 text-sm font-bold text-center mb-4">{priceError}</div>
           )}
-          <ProgressBar step={step} substep={step === 1 ? substep : undefined} />
           {/* If lessonType is set from query, skip selection and go to step 1 form */}
           {step === 1 && lessonType === "" && (
             <div className="bg-gray-900/50 border border-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-2xl mx-auto backdrop-blur-sm hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
-              <h3 className="text-2xl text-white mb-8 text-center font-bold">レッスンの種類を選択してください</h3>
+              <div className="text-center mb-12">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-[#3881ff] to-[#5a9eff] rounded-full mb-6 shadow-lg">
+                  <span className="text-2xl">📚</span>
+                </div>
+                <h3 className="text-3xl text-white font-bold mb-2">レッスンの種類を選択してください</h3>
+                <div className="w-40 h-1 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] mx-auto rounded-full"></div>
+              </div>
               <div className="grid md:grid-cols-2 gap-6">
                 <button
                   className="btn-lesson btn-lesson-online"
@@ -617,6 +684,7 @@ export default function BookLessonPage() {
                     <div className="btn-lesson-icon">💻</div>
                     <div className="btn-lesson-title">オンラインレッスン</div>
                     <div className="btn-lesson-subtitle">Zoom、Google Meetなど</div>
+                    <div className="text-[#e5f4ff] font-bold text-lg mt-2">2,500円〜</div>
                   </div>
                 </button>
                 <button
@@ -627,6 +695,7 @@ export default function BookLessonPage() {
                     <div className="btn-lesson-icon">🏠</div>
                     <div className="btn-lesson-title">対面レッスン</div>
                     <div className="btn-lesson-subtitle">ご自宅またはカフェなど</div>
+                    <div className="text-[#e5f4ff] font-bold text-lg mt-2">3,000円〜</div>
                   </div>
                 </button>
               </div>
@@ -636,25 +705,25 @@ export default function BookLessonPage() {
             </div>
           )}
           {step === 1 && lessonType !== "" && (
-            <div className="space-y-6 max-w-lg mx-auto">
+            <div className="space-y-6 w-full max-w-6xl mx-auto">
               {/* Stage 1: Participants */}
               {substep === 1 && (
-                <div className="bg-gray-900/50 border border-gray-800 p-8 rounded-xl shadow-xl hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
+                <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-xl shadow-xl hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300 max-w-sm mx-auto">
                   <h3 className="text-xl text-white mb-6 text-center font-bold">参加者数を選択</h3>
-                  <div className="flex items-center justify-center gap-6">
+                  <div className="flex items-center justify-center gap-4">
                     <button
                       type="button"
-                      className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-700 to-gray-800 text-[#3881ff] font-bold text-xl border-2 border-[#3881ff] hover:from-[#3881ff] hover:to-[#5a9eff] hover:text-white hover:scale-110 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100 shadow-lg"
+                      className="px-3 py-2 rounded-lg bg-gradient-to-br from-gray-700 to-gray-800 text-[#3881ff] font-bold text-lg border-2 border-[#3881ff] hover:from-[#3881ff] hover:to-[#5a9eff] hover:text-white hover:scale-110 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100 shadow-lg flex items-center justify-center min-w-[40px]"
                       onClick={() => setParticipants(Math.max(1, participants - 1))}
                       disabled={participants <= 1}
                     >-</button>
-                    <div className="text-center w-20">
-                      <div className="text-4xl font-bold text-white w-full">{participants}</div>
-                      <div className="text-gray-400">名</div>
+                    <div className="text-center px-4">
+                      <div className="text-4xl font-bold text-white">{participants}</div>
+                      <div className="text-gray-400 text-sm">名</div>
                     </div>
                     <button
                       type="button"
-                      className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-700 to-gray-800 text-[#3881ff] font-bold text-xl border-2 border-[#3881ff] hover:from-[#3881ff] hover:to-[#5a9eff] hover:text-white hover:scale-110 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100 shadow-lg"
+                      className="px-3 py-2 rounded-lg bg-gradient-to-br from-gray-700 to-gray-800 text-[#3881ff] font-bold text-lg border-2 border-[#3881ff] hover:from-[#3881ff] hover:to-[#5a9eff] hover:text-white hover:scale-110 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100 shadow-lg flex items-center justify-center min-w-[40px]"
                       onClick={() => {
                         if (participants < 5) {
                           setParticipants(participants + 1);
@@ -670,26 +739,28 @@ export default function BookLessonPage() {
                       参加者は最大5名までです。
                     </div>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => setSubstep(2)}
-                    className="btn-primary w-full mt-8"
-                  >
-                    次へ
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLessonType("")}
-                    className="btn-danger w-full mt-4"
-                  >
-                    レッスンタイプを変更
-                  </button>
+                  <div className="flex gap-3 mt-8 justify-center">
+                    <button
+                      type="button"
+                      onClick={() => setLessonType("")}
+                      className="btn-danger w-24"
+                    >
+                      戻る
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSubstep(2)}
+                      className="btn-primary w-24"
+                    >
+                      次へ
+                    </button>
+                  </div>
                 </div>
               )}
 
               {/* Stage 2: Contact Info */}
               {substep === 2 && (
-                <div className="bg-gray-900/50 border border-gray-800 p-8 rounded-xl shadow-xl hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
+                <div className="bg-gray-900/50 border border-gray-800 p-8 rounded-xl shadow-xl hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300 max-w-2xl mx-auto">
                   <h3 className="text-xl text-white mb-6 text-center font-bold">お客様情報</h3>
                   <div className="space-y-4">
                     <div className="grid sm:grid-cols-2 gap-4">
@@ -700,7 +771,7 @@ export default function BookLessonPage() {
                           value={customerName}
                           onChange={(e) => setCustomerName(e.target.value)}
                           placeholder="例: 山田 太郎"
-                          className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff]"
+                          className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] min-w-0"
                           required
                         />
                       </div>
@@ -711,7 +782,7 @@ export default function BookLessonPage() {
                           value={customerKana}
                           onChange={(e) => setCustomerKana(e.target.value)}
                           placeholder="例: ヤマダ タロウ"
-                          className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff]"
+                          className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] min-w-0"
                           required
                         />
                       </div>
@@ -723,7 +794,7 @@ export default function BookLessonPage() {
                         value={customerEmail}
                         onChange={(e) => setCustomerEmail(e.target.value)}
                         placeholder="例: your@email.com"
-                        className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff]"
+                        className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] min-w-0"
                         required
                       />
                     </div>
@@ -750,70 +821,99 @@ export default function BookLessonPage() {
 
               {/* Stage 3: Date and Time */}
               {substep === 3 && (
-                <div className="bg-gray-900/50 border border-gray-800 p-8 rounded-xl shadow-xl hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
-                  <h3 className="text-xl text-white mb-6 text-center font-bold">日時を選択</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-gray-300 font-medium mb-2">予約日</label>
-                      <select
-                        value={selectedDate}
-                        onChange={(e) => {
-                          setSelectedDate(e.target.value);
+                <div className={`bg-gray-900/50 border border-gray-800 p-8 rounded-xl shadow-xl hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-700 ease-out ${
+                  selectedDate ? 'max-w-none' : 'max-w-md mx-auto'
+                }`}>
+                  {/* Dynamic container that grows when date is selected */}
+                  <div className={`flex flex-col lg:flex-row lg:gap-6 space-y-6 lg:space-y-0 w-full transition-all duration-700 ease-out ${
+                    selectedDate ? 'lg:justify-start' : 'lg:justify-center'
+                  }`}>
+                    {/* Calendar Section - Fixed width */}
+                    <div className="lg:w-80 lg:flex-shrink-0">
+                      <Calendar
+                        availableDates={getAvailableDates()}
+                        selectedDate={selectedDate}
+                        onDateSelect={(date) => {
+                          setSelectedDate(date);
                           setSelectedTime("");
                         }}
-                        className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff]"
-                        required
-                      >
-                        <option value="">-- 日を選んでください --</option>
-                        {getAvailableDates().map((date) => {
-                          const d = new Date(date);
-                          const weekday = d.getDay();
-                          const weekdayNames = ["日", "月", "火", "水", "木", "金", "土"];
-                          const fullyBooked = isDateFullyBooked(date);
-                          return (
-                            <option key={date} value={date} disabled={fullyBooked}>
-                              {date}（{weekdayNames[weekday]}）{fullyBooked ? "（満席）" : ""}
-                            </option>
-                          );
-                        })}
-                      </select>
+                        fullyBookedDates={getAvailableDates().filter(date => isDateFullyBooked(date))}
+                      />
                     </div>
-                    <div>
-                      <label className="block text-gray-300 font-medium mb-2">予約時間</label>
-                      <select
-                        value={selectedTime}
-                        onChange={(e) => setSelectedTime(e.target.value)}
-                        className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff]"
-                        disabled={!selectedDate}
-                        required
-                      >
-                        <option value="">-- 時間を選んでください --</option>
-                        {selectedDate && getTimesForDate(selectedDate).length === 0 && (
-                          <option value="" disabled>この日は満席です</option>
-                        )}
-                        {getTimesForDate(selectedDate).map((slot) => (
-                          <option key={slot.value} value={slot.value} disabled={slot.disabled}>
-                            {slot.label}
-                          </option>
-                        ))}
-                      </select>
+                    
+                    {/* Time Selection Section - Animates in when date selected */}
+                    <div className={`lg:flex-1 lg:min-w-0 transition-all duration-700 ease-out ${
+                      selectedDate 
+                        ? 'opacity-100 lg:max-w-none lg:translate-x-0' 
+                        : 'opacity-0 lg:max-w-0 lg:translate-x-4 lg:overflow-hidden'
+                    }`}>
+                      {selectedDate && (
+                        <div className="animate-fadeIn">
+                          {getTimesForDate(selectedDate).length > 0 ? (
+                            <div 
+                              className="grid gap-2 w-full"
+                              style={{
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                                maxHeight: '400px', // Match approximate calendar height
+                                gridAutoFlow: 'column',
+                                gridTemplateRows: 'repeat(8, minmax(45px, auto))'
+                              }}
+                            >
+                              {getTimesForDate(selectedDate).map((slot) => (
+                                <button
+                                  key={slot.value}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedTime(slot.value);
+                                    // Auto-advance to next step when time is selected
+                                    setTimeout(() => setSubstep(4), 300);
+                                  }}
+                                  disabled={slot.disabled}
+                                  className={`
+                                    px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-300 border-2 whitespace-nowrap h-[46px] relative shadow-lg
+                                    ${slot.disabled
+                                      ? 'bg-gray-700/60 text-gray-400 border-gray-600 cursor-not-allowed opacity-50'
+                                      : selectedTime === slot.value
+                                      ? 'bg-gradient-to-br from-[#3881ff] to-[#5a9eff] text-white border-[#3881ff] shadow-xl ring-2 ring-[#3881ff]/40 transform scale-105 z-10'
+                                      : 'bg-gradient-to-br from-gray-700 to-gray-800 text-white border-gray-600 hover:from-[#3881ff] hover:to-[#5a9eff] hover:border-[#3881ff] hover:shadow-xl hover:transform hover:scale-105 hover:ring-2 hover:ring-[#3881ff]/30'
+                                    }
+                                  `}
+                                >
+                                  <div className="flex flex-col items-center justify-center gap-1">
+                                    <span className="font-semibold text-sm leading-tight">
+                                      {slot.disabled ? slot.label.replace('（予約済み）', '') : slot.label}
+                                    </span>
+                                    {slot.disabled && (
+                                      <span className="text-red-400 text-xs font-bold px-1 py-0.5 bg-red-900/20 rounded">
+                                        予約済み
+                                      </span>
+                                    )}
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-8 text-gray-400 bg-gray-800/50 rounded-lg border border-gray-600 animate-fadeIn">
+                              <div className="text-lg font-medium">この日は満席です</div>
+                              <div className="text-sm mt-1">他の日を選択してください</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <div className="flex gap-4 mt-8">
+                  
+                  <div className="mt-6">
                     <button
                       type="button"
                       onClick={() => setSubstep(2)}
-                      className="btn-danger flex-1"
+                      className={`btn-danger transition-all duration-700 ease-out ${
+                        selectedDate 
+                          ? 'w-full' // Full width when time slots are shown
+                          : 'w-80 mx-auto block lg:w-80' // Calendar width when only calendar is shown
+                      }`}
                     >
                       戻る
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSubstep(4)}
-                      disabled={!selectedDate || !selectedTime}
-                      className="btn-primary flex-1"
-                    >
-                      次へ
                     </button>
                   </div>
                 </div>
@@ -821,17 +921,17 @@ export default function BookLessonPage() {
 
               {/* Stage 4: Price and Payment */}
               {substep === 4 && (
-                <form onSubmit={handleSubmit} className="bg-gray-900/50 border border-gray-800 p-8 rounded-xl shadow-xl hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
+                <form onSubmit={handleSubmit} className="bg-gray-900/50 border border-gray-800 p-8 rounded-xl shadow-xl hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300 max-w-lg mx-auto">
                   <input type="hidden" name="lessonType" value={lessonType} />
                   <input type="hidden" name="name" value={customerName} />
                   <input type="hidden" name="kana" value={customerKana} />
                   <input type="hidden" name="email" value={customerEmail} />
                   <input type="hidden" name="participants" value={participants} />
                   
-                  <h3 className="text-xl text-white mb-8 text-center font-bold">料金確認・お支払い</h3>
+                  <h3 className="text-xl text-white mb-6 text-center font-bold">料金確認・お支払い</h3>
                   
                   {/* Summary */}
-                  <div className="bg-gray-800/50 p-4 rounded-lg mb-6 space-y-2 text-sm">
+                  <div className="bg-gray-800/50 p-3 rounded-lg mb-4 space-y-1 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-300">レッスン形式:</span>
                       <span className="text-white">{lessonType === 'online' ? 'オンライン' : '対面'}</span>
@@ -846,39 +946,39 @@ export default function BookLessonPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-0">
                     <div>
-                      <label className="block text-gray-300 font-medium mb-2">クーポンコード（任意）</label>
+                      <label className="block text-gray-300 font-medium mb-2 text-sm">クーポンコード（任意）</label>
                       <div className="flex gap-2">
                         <input
                           type="text"
                           value={coupon}
                           onChange={(e) => setCoupon(e.target.value)}
                           placeholder="クーポンコード"
-                          className="flex-1 px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff]"
+                          className="flex-1 px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] text-sm"
                         />
                         <button
                           type="button"
                           onClick={() => setCouponConfirmed(true)}
                           disabled={!coupon || couponConfirmed || priceLoading}
-                          className="btn-success"
+                          className="btn-success px-4 py-2 text-sm"
                         >
                           {couponConfirmed ? "適用済み" : "適用"}
                         </button>
                       </div>
                     </div>
 
-                    <div className="text-center py-4">
-                      <div className="text-2xl font-bold text-[#3881ff]">
+                    <div className="text-center py-3">
+                      <div className="text-xl font-bold text-[#3881ff]">
                         合計: {getDisplayPrice()}
                       </div>
-                      {priceError && <div className="text-red-400 text-sm mt-2">{priceError}</div>}
+                      {priceError && <div className="text-red-400 text-xs mt-1">{priceError}</div>}
                     </div>
                   </div>
 
-                  {formError && <div className="text-red-400 text-center mb-4">{formError}</div>}
+                  {formError && <div className="text-red-400 text-center mb-3 text-sm">{formError}</div>}
 
-                  <div className="flex gap-4 mt-8">
+                  <div className="flex gap-3 mt-6">
                     <button
                       type="button"
                       onClick={() => setSubstep(3)}

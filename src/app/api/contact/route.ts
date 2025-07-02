@@ -24,10 +24,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Send email to yourself with user's email as the "from" address
-    // This allows you to reply directly to the user
+    // Send email to yourself with user's information
     await resend.emails.send({
-      from: `${name} <${email}>`, // User's name and email as sender
+      from: 'contact@eigotankentai.com', // Use a verified domain email
       to: 'luke@eigotankentai.com', // Your email
       replyTo: email, // Ensure replies go to the user
       subject: `[お問い合わせ] ${subject}`,
