@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
 type Theme = 'light' | 'dark' | 'system';
 type ResolvedTheme = 'light' | 'dark';
@@ -38,12 +38,12 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   };
 
   // Function to resolve theme based on current theme setting
-  const resolveTheme = (currentTheme: Theme): ResolvedTheme => {
+  const resolveTheme = useCallback((currentTheme: Theme): ResolvedTheme => {
     if (currentTheme === 'system') {
       return getSystemTheme();
     }
     return currentTheme;
-  };
+  }, []);
 
   // Load theme from localStorage on mount
   useEffect(() => {
@@ -55,7 +55,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       // Default to system preference
       setResolvedTheme(getSystemTheme());
     }
-  }, []);
+  }, [resolveTheme]);
 
   // Listen for system theme changes
   useEffect(() => {

@@ -5,7 +5,6 @@ import { client } from "@/sanity/lib/client";
 import { groq } from "next-sanity";
 import Image from "next/image";
 import { urlFor } from "@/sanity/lib/image";
-import Link from "next/link";
 import { PortableText } from "@portabletext/react";
 import type { PortableTextBlock } from "@portabletext/types";
 import LoadingAnimation from "../../components/LoadingAnimation";

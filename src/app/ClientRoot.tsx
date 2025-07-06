@@ -171,7 +171,7 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
                     <Link
                       href={nav[0].href}
                       className="inline-block px-6 sm:px-8 py-3 sm:py-4 rounded-full font-bold text-base sm:text-lg md:text-xl bg-gradient-to-r from-[#3881ff] to-[#5a9eff] text-white shadow-xl hover:from-[#5a9eff] hover:to-[#3881ff] hover:scale-105 transition-all duration-300 border-2 border-[#3881ff]/50 hover:border-[#5a9eff] focus:outline-none focus:ring-4 focus:ring-blue-200/50"
-                      style={{textShadow:'0 2px 8px rgba(0,0,0,0.20)'}}
+                      style={{textShadow:'0 2px 8px rgba(0,0,0,0.20)', color: 'white'}}
                     >
                       {nav[0].label}
                     </Link>
