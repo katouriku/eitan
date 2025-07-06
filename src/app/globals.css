@@ -199,31 +199,44 @@ img {
 }
 
 .btn-lesson {
-  width: 100%;
+  position: relative;
   padding: 1.5rem;
-  border-radius: 0.75rem;
+  border-radius: 1rem;
+  border: 2px solid #4b5563;
+  background: rgba(31, 41, 55, 0.5);
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transform: translateY(0);
+  text-align: left;
+  overflow: hidden;
+  width: 100%;
   color: white;
   font-weight: 600;
   font-size: 1.125rem;
-  transition: all 0.2s ease;
-  border: 2px solid;
-  text-align: center;
-  background: #3881ff;
-  border-color: #3881ff;
+}
+
+.light .btn-lesson {
+  border-color: #bfdbfe;
+  background: rgba(219, 234, 254, 0.8);
+  color: #1f2937;
+  box-shadow: 0 4px 12px rgba(56, 129, 255, 0.1);
 }
 
 .btn-lesson:hover {
-  background: #5a9eff;
-  border-color: #5a9eff;
-  transform: scale(1.02) translateY(-4px);
+  border-color: #3881ff;
+  background: rgba(56, 129, 255, 0.1);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  transform: translateY(-4px) scale(1.02);
 }
 
 .btn-lesson:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(56, 129, 255, 0.3);
+  box-shadow: 0 0 0 4px rgba(56, 129, 255, 0.3);
 }
 
 .btn-lesson-content {
+  position: relative;
+  z-index: 10;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -231,26 +244,30 @@ img {
 }
 
 .btn-lesson-icon {
-  font-size: 2rem;
-  margin-bottom: 0.25rem;
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
 }
 
 .btn-lesson-title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  margin-bottom: 0.25rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 0.5rem;
+}
+
+.light .btn-lesson-title {
+  color: #1f2937;
 }
 
 .btn-lesson-subtitle {
+  color: #d1d5db;
   font-size: 0.875rem;
   font-weight: 400;
   opacity: 0.9;
 }
 
-
-
-.btn-lesson:focus {
-  outline: none;
+.light .btn-lesson-subtitle {
+  color: #6b7280;
 }
 
 
@@ -482,69 +499,6 @@ img {
 
 .animation-delay-400 {
   animation-delay: 400ms;
-}
-
-/* Theme-aware lesson button styles */
-.btn-lesson {
-  position: relative;
-  padding: 1.5rem;
-  border-radius: 1rem;
-  border: 2px solid #4b5563;
-  background: rgba(31, 41, 55, 0.5);
-  transition: all 0.3s ease;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  transform: translateY(0);
-  text-align: left;
-  overflow: hidden;
-}
-
-.light .btn-lesson {
-  border-color: #bfdbfe;
-  background: rgba(219, 234, 254, 0.8);
-  color: #1f2937;
-  box-shadow: 0 4px 12px rgba(56, 129, 255, 0.1);
-}
-
-.btn-lesson:hover {
-  border-color: #3881ff;
-  background: rgba(56, 129, 255, 0.1);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  transform: translateY(-4px) scale(1.02);
-}
-
-.btn-lesson:focus {
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(56, 129, 255, 0.3);
-}
-
-.btn-lesson-content {
-  position: relative;
-  z-index: 10;
-}
-
-.btn-lesson-icon {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-}
-
-.btn-lesson-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #ffffff;
-  margin-bottom: 0.5rem;
-}
-
-.light .btn-lesson-title {
-  color: #1f2937;
-}
-
-.btn-lesson-subtitle {
-  color: #d1d5db;
-  font-size: 0.875rem;
-}
-
-.light .btn-lesson-subtitle {
-  color: #6b7280;
 }
 
 /* Form and input styles */

@@ -737,7 +737,7 @@ export default function BookLessonPage() {
               </div>
               <div className="grid md:grid-cols-2 gap-6">
                 <button
-                  className="btn-lesson btn-lesson-online"
+                  className="btn-lesson"
                   onClick={() => setLessonType("online")}
                 >
                   <div className="btn-lesson-content">
@@ -748,7 +748,7 @@ export default function BookLessonPage() {
                   </div>
                 </button>
                 <button
-                  className="btn-lesson btn-lesson-inperson"
+                  className="btn-lesson"
                   onClick={() => setLessonType("in-person")}
                 >
                   <div className="btn-lesson-content">
