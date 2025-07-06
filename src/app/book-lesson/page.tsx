@@ -10,6 +10,7 @@ import { useStripe, useElements } from "@stripe/react-stripe-js";
 import { useQueryParam } from "./useQueryParam";
 import Calendar from "../../components/Calendar";
 import LoadingAnimation from "../../components/LoadingAnimation";
+import { useTheme } from "../../contexts/ThemeContext";
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 // Types for new schema
@@ -22,7 +23,7 @@ interface WeeklyAvailability {
   ranges: TimeRange[];
 }
 
-function StripePaymentForm({ onSuccess, onError }: { clientSecret: string, onSuccess: () => void, onError: (msg: string) => void }) {
+function StripePaymentForm({ onSuccess, onError, onBack }: { clientSecret: string, onSuccess: () => void, onError: (msg: string) => void, onBack: () => void }) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -60,23 +61,35 @@ function StripePaymentForm({ onSuccess, onError }: { clientSecret: string, onSuc
     <form id="stripe-payment-form" onSubmit={handleSubmit} className="flex flex-col gap-6">
       <PaymentElement
         options={{
-          paymentMethodOrder: ["card", "konbini", "google_pay"],
-          layout: "tabs",
+          layout: {
+            type: "tabs",
+            defaultCollapsed: false,
+          },
         }}
       />
       {error && <div className="text-red-400 font-bold mt-2">{error}</div>}
-      <button
-        className="btn-success px-8 py-3"
-        type="submit"
-        disabled={loading || !stripe || !elements}
-      >
-        {loading ? "処理中..." : "お支払いを確定する"}
-      </button>
+      <div className="flex gap-3">
+        <button
+          type="button"
+          onClick={onBack}
+          className="btn-danger flex-1"
+        >
+          戻る
+        </button>
+        <button
+          className="btn-success flex-1"
+          type="submit"
+          disabled={loading || !stripe || !elements}
+        >
+          {loading ? "処理中..." : "お支払いを確定する"}
+        </button>
+      </div>
     </form>
   );
 }
 
 export default function BookLessonPage() {
+  const { resolvedTheme } = useTheme();
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -227,6 +240,8 @@ export default function BookLessonPage() {
     const savedTime = Cookies.get("booking_time") || "";
     const savedParticipants = Cookies.get("booking_participants");
     const savedLessonType = Cookies.get("booking_lessonType") as "online" | "in-person" | "";
+    const savedClientSecret = Cookies.get("booking_clientSecret") || "";
+    const savedStep = Cookies.get("booking_step");
     
     // Restore form data
     if (savedName) setCustomerName(savedName);
@@ -236,6 +251,13 @@ export default function BookLessonPage() {
     if (savedTime) setSelectedTime(savedTime);
     if (savedParticipants) setParticipants(parseInt(savedParticipants));
     if (savedLessonType) setLessonType(savedLessonType);
+    
+    // Restore payment session if exists
+    if (savedClientSecret && savedStep === "2") {
+      setClientSecret(savedClientSecret);
+      setStep(2);
+      return; // Skip normal progress restoration when in payment mode
+    }
     
     // Restore progress - advance to appropriate substep if data exists
     if (savedLessonType && !lessonTypeParam) {
@@ -276,6 +298,17 @@ export default function BookLessonPage() {
     if (participants) Cookies.set("booking_participants", participants.toString(), { expires: 30 });
   }, [participants]);
   
+  // Save client secret and step for payment session persistence
+  useEffect(() => {
+    if (clientSecret) {
+      Cookies.set("booking_clientSecret", clientSecret, { expires: 1 }); // Short expiry for security
+    }
+  }, [clientSecret]);
+  
+  useEffect(() => {
+    Cookies.set("booking_step", step.toString(), { expires: 1 });
+  }, [step]);
+  
   // Clear all booking cookies after booking confirmation
   useEffect(() => {
     if (step === 3) {
@@ -286,6 +319,8 @@ export default function BookLessonPage() {
       Cookies.remove("booking_time");
       Cookies.remove("booking_participants");
       Cookies.remove("booking_lessonType");
+      Cookies.remove("booking_clientSecret");
+      Cookies.remove("booking_step");
     }
   }, [step]);
 
@@ -592,7 +627,7 @@ export default function BookLessonPage() {
     const handleStepClick = (stepNum: number) => {
       if (stepNum >= currentStep) return; // Can't go to future steps
       
-      if (stepNum === 1 && lessonType) {
+      if (stepNum === 1) {
         // Reset to lesson type selection
         setLessonType("");
         setSubstep(1);
@@ -678,10 +713,10 @@ export default function BookLessonPage() {
           <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 mb-4 min-h-[2rem]">
             {lessonType && (
               <>
-                <div className="text-base sm:text-lg font-bold text-gray-200 flex flex-row items-center gap-2">
+                <div className="text-base sm:text-lg font-bold text-[var(--muted-foreground)] flex flex-row items-center gap-2">
                   <span>合計金額(税込み): <span className="text-[#3881ff] text-xl sm:text-2xl font-extrabold">{getDisplayPrice()}</span></span>
                 </div>
-                <div className="text-xs sm:text-sm text-gray-400 flex flex-row items-center">
+                <div className="text-xs sm:text-sm text-[var(--muted-foreground)] flex flex-row items-center">
                   (参加者数: {participants}名)
                 </div>
               </>
@@ -692,12 +727,12 @@ export default function BookLessonPage() {
           )}
           {/* If lessonType is set from query, skip selection and go to step 1 form */}
           {step === 1 && lessonType === "" && (
-            <div className="bg-gray-900/50 border border-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-2xl mx-auto backdrop-blur-sm hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
+            <div className="bg-[var(--card)]/50 border border-[var(--border)] p-8 rounded-2xl shadow-2xl w-full max-w-2xl mx-auto backdrop-blur-sm hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
               <div className="text-center mb-12">
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-[#3881ff] to-[#5a9eff] rounded-full mb-6 shadow-lg">
                   <span className="text-2xl">📚</span>
                 </div>
-                <h3 className="text-3xl text-white font-bold mb-2">レッスンの種類を選択してください</h3>
+                <h3 className="text-3xl text-[var(--foreground)] font-bold mb-2">レッスンの種類を選択してください</h3>
                 <div className="w-40 h-1 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] mx-auto rounded-full"></div>
               </div>
               <div className="grid md:grid-cols-2 gap-6">
@@ -708,8 +743,8 @@ export default function BookLessonPage() {
                   <div className="btn-lesson-content">
                     <div className="btn-lesson-icon">💻</div>
                     <div className="btn-lesson-title">オンラインレッスン</div>
-                    <div className="btn-lesson-subtitle">Zoom、Google Meetなど</div>
-                    <div className="text-[#e5f4ff] font-bold text-lg mt-2">2,500円〜</div>
+                    <div className="btn-lesson-subtitle">Discord, Zoomなど</div>
+                    <div className="text-[var(--primary)] font-bold text-lg mt-2">2,500円〜</div>
                   </div>
                 </button>
                 <button
@@ -719,12 +754,12 @@ export default function BookLessonPage() {
                   <div className="btn-lesson-content">
                     <div className="btn-lesson-icon">🏠</div>
                     <div className="btn-lesson-title">対面レッスン</div>
-                    <div className="btn-lesson-subtitle">ご自宅またはカフェなど</div>
-                    <div className="text-[#e5f4ff] font-bold text-lg mt-2">3,000円〜</div>
+                    <div className="btn-lesson-subtitle">ご自宅または交流センター</div>
+                    <div className="text-[var(--primary)] font-bold text-lg mt-2">3,000円〜</div>
                   </div>
                 </button>
               </div>
-              <div className="text-sm text-gray-300 mt-6 text-center bg-gray-700/60 p-4 rounded-xl border border-gray-600">
+              <div className="text-sm text-[var(--muted-foreground)] mt-6 text-center bg-[var(--muted)]/60 p-4 rounded-xl border border-[var(--border)]">
                 ※ 対面レッスンは美里町から30分以内の場所のみ対応しています。
               </div>
             </div>
@@ -733,22 +768,22 @@ export default function BookLessonPage() {
             <div className="space-y-6 w-full max-w-6xl mx-auto">
               {/* Stage 1: Participants */}
               {substep === 1 && (
-                <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-xl shadow-xl hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300 max-w-sm mx-auto">
-                  <h3 className="text-xl text-white mb-6 text-center font-bold">参加者数を選択</h3>
-                  <div className="flex items-center justify-center gap-4">
+                <div className="bg-[var(--card)]/50 border border-[var(--border)] p-6 rounded-xl shadow-xl hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300 max-w-sm mx-auto">
+                  <h3 className="text-2xl text-[var(--foreground)] text-center font-bold">参加者数を選択</h3>
+                  <div className="flex items-center justify-center mt-8 gap-4">
                     <button
                       type="button"
-                      className="px-3 py-2 rounded-lg bg-gradient-to-br from-gray-700 to-gray-800 text-[#3881ff] font-bold text-lg border-2 border-[#3881ff] hover:from-[#3881ff] hover:to-[#5a9eff] hover:text-white hover:scale-110 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100 shadow-lg flex items-center justify-center min-w-[40px]"
+                      className="px-3 py-2 rounded-lg bg-gradient-to-br from-[var(--muted)] to-[var(--secondary)] text-[#3881ff] font-bold text-lg border-2 border-[#3881ff] hover:from-[#3881ff] hover:to-[#5a9eff] hover:text-black hover:scale-110 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100 shadow-lg flex items-center justify-center min-w-[40px]"
                       onClick={() => setParticipants(Math.max(1, participants - 1))}
                       disabled={participants <= 1}
                     >-</button>
                     <div className="text-center px-4">
-                      <div className="text-4xl font-bold text-white">{participants}</div>
-                      <div className="text-gray-400 text-sm">名</div>
+                      <div className="text-4xl font-bold text-[var(--foreground)]">{participants}</div>
+                      <div className="text-[var(--muted-foreground)] text-sm">名</div>
                     </div>
                     <button
                       type="button"
-                      className="px-3 py-2 rounded-lg bg-gradient-to-br from-gray-700 to-gray-800 text-[#3881ff] font-bold text-lg border-2 border-[#3881ff] hover:from-[#3881ff] hover:to-[#5a9eff] hover:text-white hover:scale-110 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100 shadow-lg flex items-center justify-center min-w-[40px]"
+                      className="px-3 py-2 rounded-lg bg-gradient-to-br from-[var(--muted)] to-[var(--secondary)] text-[#3881ff] font-bold text-lg border-2 border-[#3881ff] hover:from-[#3881ff] hover:to-[#5a9eff] hover:text-black hover:scale-110 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100 shadow-lg flex items-center justify-center min-w-[40px]"
                       onClick={() => {
                         if (participants < 5) {
                           setParticipants(participants + 1);
@@ -785,35 +820,35 @@ export default function BookLessonPage() {
 
               {/* Stage 2: Contact Info */}
               {substep === 2 && (
-                <div className="bg-gray-900/50 border border-gray-800 p-8 rounded-xl shadow-xl hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300 max-w-2xl mx-auto">
-                  <h3 className="text-xl text-white mb-6 text-center font-bold">お客様情報</h3>
+                <div className="bg-[var(--card)]/50 border border-[var(--border)] p-8 rounded-xl shadow-xl hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300 max-w-2xl mx-auto">
+                  <h3 className="text-2xl text-[var(--foreground)] text-center font-bold">お客様情報</h3>
                   <div className="space-y-4">
-                    <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="grid sm:grid-cols-2 gap-4 mt-10">
                       <div>
-                        <label className="block text-gray-300 font-medium mb-2">お名前（漢字）</label>
+                        <label className="block text-[var(--foreground)] font-medium mb-2">お名前（漢字）</label>
                         <input
                           type="text"
                           value={customerName}
                           onChange={(e) => setCustomerName(e.target.value)}
                           placeholder="例: 山田 太郎"
-                          className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] min-w-0"
+                          className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] min-w-0"
                           required
                         />
                       </div>
                       <div>
-                        <label className="block text-gray-300 font-medium mb-2">お名前（カナ）</label>
+                        <label className="block text-[var(--foreground)] font-medium mb-2">お名前（カナ）</label>
                         <input
                           type="text"
                           value={customerKana}
                           onChange={(e) => setCustomerKana(e.target.value)}
                           placeholder="例: ヤマダ タロウ"
-                          className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] min-w-0"
+                          className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] min-w-0"
                           required
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-gray-300 font-medium mb-2">メールアドレス</label>
+                      <label className="block text-[var(--foreground)] font-medium mb-2">メールアドレス</label>
                       <input
                         type="email"
                         value={customerEmail}
@@ -821,7 +856,7 @@ export default function BookLessonPage() {
                         placeholder="例: your@email.com"
                         pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
                         title="有効なメールアドレスを入力してください"
-                        className="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] min-w-0"
+                        className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] min-w-0"
                         required
                       />
                     </div>
@@ -848,7 +883,7 @@ export default function BookLessonPage() {
 
               {/* Stage 3: Date and Time */}
               {substep === 3 && (
-                <div className={`bg-gray-900/50 border border-gray-800 p-8 rounded-xl shadow-xl hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-700 ease-out ${
+                <div className={`bg-[var(--card)]/50 border border-[var(--border)] p-8 rounded-xl shadow-xl hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-700 ease-out ${
                   selectedDate ? 'max-w-none' : 'max-w-md mx-auto'
                 }`}>
                   {/* Dynamic container that grows when date is selected */}
@@ -911,8 +946,8 @@ export default function BookLessonPage() {
                                     ${slot.disabled
                                       ? 'bg-red-900/60 text-red-300 border-red-700/60 cursor-not-allowed opacity-80 line-through decoration-red-400 decoration-2'
                                       : selectedTime === slot.value
-                                      ? 'bg-gradient-to-br from-[#3881ff] to-[#5a9eff] text-white border-[#3881ff] shadow-xl ring-2 ring-[#3881ff]/40 transform scale-105 z-10'
-                                      : 'bg-gradient-to-br from-gray-700 to-gray-800 text-white border-gray-600 hover:from-[#3881ff] hover:to-[#5a9eff] hover:border-[#3881ff] hover:shadow-xl hover:transform hover:scale-105 hover:ring-2 hover:ring-[#3881ff]/30'
+                                      ? 'bg-gradient-to-br from-[#3881ff] to-[#5a9eff] text-blue-500 border-[#3881ff] shadow-xl ring-2 ring-[#3881ff]/40 transform scale-105 z-10'
+                                      : 'bg-gradient-to-br from-[var(--muted)] to-[var(--secondary)] text-[var(--foreground)] border-[var(--border)] hover:from-[#3881ff] hover:to-[#5a9eff] hover:border-[#3881ff] hover:shadow-xl hover:transform hover:scale-105 hover:ring-2 hover:ring-[#3881ff]/30'
                                     }
                                   `}
                                 >
@@ -925,7 +960,7 @@ export default function BookLessonPage() {
                               ))}
                             </div>
                           ) : (
-                            <div className="text-center py-8 text-gray-400 bg-gray-800/50 rounded-lg border border-gray-600 animate-fadeIn">
+                            <div className="text-center py-8 text-[var(--muted-foreground)] bg-[var(--muted)]/50 rounded-lg border border-[var(--border)] animate-fadeIn">
                               <div className="text-lg font-medium">この日は満席です</div>
                               <div className="text-sm mt-1">他の日を選択してください</div>
                             </div>
@@ -950,41 +985,41 @@ export default function BookLessonPage() {
 
               {/* Stage 4: Price and Payment */}
               {substep === 4 && (
-                <form onSubmit={handleSubmit} className="bg-gray-900/50 border border-gray-800 p-8 rounded-xl shadow-xl hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300 max-w-lg mx-auto">
+                <form onSubmit={handleSubmit} className="bg-[var(--card)]/50 border border-[var(--border)] p-8 rounded-xl shadow-xl hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300 max-w-lg mx-auto">
                   <input type="hidden" name="lessonType" value={lessonType} />
                   <input type="hidden" name="name" value={customerName} />
                   <input type="hidden" name="kana" value={customerKana} />
                   <input type="hidden" name="email" value={customerEmail} />
                   <input type="hidden" name="participants" value={participants} />
                   
-                  <h3 className="text-xl text-white text-center font-bold">料金確認・お支払い</h3>
+                  <h3 className="text-xl text-[var(--foreground)] text-center font-bold">料金確認・お支払い</h3>
                   
                   {/* Summary */}
-                  <div className="bg-gray-800/50 p-3 mt-3 rounded-lg mb-4 space-y-1 text-sm">
+                  <div className="bg-[var(--muted)]/50 p-3 mt-3 rounded-lg mb-4 space-y-1 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-300">レッスン形式:</span>
-                      <span className="text-white">{lessonType === 'online' ? 'オンライン' : '対面'}</span>
+                      <span className="text-[var(--muted-foreground)]">レッスン形式:</span>
+                      <span className="text-[var(--foreground)]">{lessonType === 'online' ? 'オンライン' : '対面'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-300">参加者数:</span>
-                      <span className="text-white">{participants}名</span>
+                      <span className="text-[var(--muted-foreground)]">参加者数:</span>
+                      <span className="text-[var(--foreground)]">{participants}名</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-300">日時:</span>
-                      <span className="text-white">{selectedDate} {selectedTime}</span>
+                      <span className="text-[var(--muted-foreground)]">日時:</span>
+                      <span className="text-[var(--foreground)]">{selectedDate} {selectedTime}</span>
                     </div>
                   </div>
 
                   <div className="space-y-0">
                     <div>
-                      <label className="block text-gray-300 font-medium mb-2 text-sm">クーポンコード（任意）</label>
+                      <label className="block text-[var(--foreground)] font-medium mb-2 text-sm">クーポンコード（任意）</label>
                       <div className="flex gap-2">
                         <input
                           type="text"
                           value={coupon}
                           onChange={(e) => setCoupon(e.target.value)}
                           placeholder="クーポンコード"
-                          className="flex-1 px-3 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] text-sm"
+                          className="flex-1 px-3 py-2 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] text-sm"
                         />
                         <button
                           type="button"
@@ -1022,7 +1057,7 @@ export default function BookLessonPage() {
           )}
           {step === 2 && clientSecret && (
             <div
-              className="bg-gray-900/50 border border-gray-800 p-8 rounded-2xl shadow-xl w-full flex flex-col gap-6 max-w-lg mx-auto min-h-0 min-w-0 max-h-[90vh] overflow-y-auto justify-center hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300"
+              className="bg-[var(--card)]/50 border border-[var(--border)] p-8 rounded-2xl shadow-xl w-full flex flex-col gap-6 max-w-lg mx-auto min-h-0 min-w-0 max-h-[90vh] overflow-y-auto justify-center hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300"
               id="payment-form-container"
               ref={paymentFormRef}
               style={{ marginTop: 'auto', marginBottom: 'auto' }}
@@ -1033,13 +1068,30 @@ export default function BookLessonPage() {
                   clientSecret,
                   locale: 'ja',
                   appearance: {
-                    theme: 'night',
+                    theme: resolvedTheme === 'dark' ? 'night' : 'stripe',
                     variables: {
                       colorPrimary: '#3881ff',
-                      colorBackground: '#18181b',
-                      colorText: '#fff',
+                      colorBackground: resolvedTheme === 'dark' ? '#18181b' : '#ffffff',
+                      colorText: resolvedTheme === 'dark' ? '#ffffff' : '#1f2937',
+                      colorDanger: '#dc2626',
                       borderRadius: '12px',
+                      spacingUnit: '4px',
+                      fontFamily: 'system-ui, sans-serif',
                     },
+                    rules: {
+                      '.Tab': {
+                        display: 'block !important',
+                        visibility: 'visible !important',
+                      },
+                      '.TabContainer': {
+                        display: 'flex !important',
+                        visibility: 'visible !important',
+                      },
+                      '.PaymentMethodSelector': {
+                        display: 'block !important',
+                        visibility: 'visible !important',
+                      }
+                    }
                   },
                 }}
               >
@@ -1047,23 +1099,18 @@ export default function BookLessonPage() {
                   clientSecret={clientSecret}
                   onSuccess={handlePaymentSuccess}
                   onError={msg => setFormError(msg)}
+                  onBack={() => setStep(1)}
                 />
               </Elements>
-              {/* <button
-                className="px-8 py-2 rounded-xl bg-[#3881ff] text-white font-extrabold text-lg shadow-lg hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-[#3881ff]/50"
-                onClick={() => setStep(3)}
-              >
-                Simulate Confirmation
-              </button> */}
             </div>
           )}
           {step === 3 && (
-            <div className="bg-gray-900/50 border border-gray-800 p-8 rounded-2xl shadow-xl w-full flex flex-col items-center gap-6 max-w-lg mx-auto min-h-0 min-w-0 max-h-[90vh] justify-center hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
+            <div className="bg-[var(--card)]/50 border border-[var(--border)] p-8 rounded-2xl shadow-xl w-full flex flex-col items-center gap-6 max-w-lg mx-auto min-h-0 min-w-0 max-h-[90vh] justify-center hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
               <svg className="w-16 h-16 text-green-400 mb-2" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
               <div className="text-green-400 font-bold text-2xl mb-2">予約完了!</div>
-              <div className="text-gray-300 text-center">
+              <div className="text-[var(--muted-foreground)] text-center">
                 ご予約ありがとうございます。<br />
                 予約確認メールが間もなく送信されます。
               </div>

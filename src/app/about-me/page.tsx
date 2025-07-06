@@ -40,7 +40,7 @@ export default function AboutMePage() {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-8 shadow-2xl backdrop-blur-sm hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
+      <div className="bg-[var(--card)]/50 border border-[var(--border)] rounded-2xl p-8 shadow-2xl backdrop-blur-sm hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
           {/* Headshot */}
           {about.headshot && (
@@ -61,15 +61,9 @@ export default function AboutMePage() {
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#3881ff] leading-tight">
               私について
             </h1>
-            <div className="prose prose-lg prose-invert max-w-none text-gray-200">
+            <div className="prose prose-lg max-w-none text-[var(--foreground)]">
               <PortableText value={about.bio} />
             </div>
-            <Link 
-              href="/book-lesson" 
-              className="inline-block px-8 py-4 rounded-full font-bold text-lg bg-gradient-to-r from-[#3881ff] to-[#5a9eff] text-white shadow-lg hover:from-[#5a9eff] hover:to-[#3881ff] hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-200/50 border-2 border-[#3881ff]/50 hover:border-[#5a9eff]"
-            >
-              レッスンを予約
-            </Link>
           </div>
         </div>
       </div>

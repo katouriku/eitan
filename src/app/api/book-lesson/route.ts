@@ -120,9 +120,8 @@ export async function POST(req: NextRequest) {
 
     // Send confirmation to user (with BCC to you)
     await resend.emails.send({
-      from: 'luke@eigotankentai.com',
+      from: 'confirmation@eigotankentai.com',
       to: email,
-      bcc: 'luke@eigotankentai.com',
       subject: '予約確定',
       html: `<!DOCTYPE html>
 <html lang="ja">
@@ -199,7 +198,7 @@ export async function POST(req: NextRequest) {
   try {
     // Send notification to yourself (admin)
     await resend.emails.send({
-      from: 'luke@eigotankentai.com',
+      from: 'confirmation@eigotankentai.com',
       to: 'luke@eigotankentai.com',
       subject: 'New Booking',
       html: `<!DOCTYPE html>

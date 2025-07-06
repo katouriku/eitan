@@ -31,6 +31,8 @@ export default function RootLayout({
           type="image/x-icon"
           sizes="32x32"
         />
+        <meta name="theme-color" content="#18181b" />
+        <meta name="color-scheme" content="light dark" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased h-full`}>
         <ClientRoot>{children}</ClientRoot>

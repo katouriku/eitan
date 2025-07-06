@@ -45,16 +45,16 @@ export default function PricingPage() {
       
       <div className={`grid gap-6 lg:gap-8 justify-items-center ${
         pricings.length === 1 
-          ? 'max-w-md mx-auto' 
+          ? 'max-w-lg mx-auto' 
           : pricings.length === 2 
-          ? 'md:grid-cols-2 max-w-4xl mx-auto justify-center' 
-          : 'md:grid-cols-2 lg:grid-cols-3 justify-center'
+          ? 'md:grid-cols-2 max-w-5xl mx-auto justify-center' 
+          : 'md:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto justify-center'
       }`}>
         {pricings.map((pricing, index) => (
           <Link
             key={index}
             href={`/book-lesson?lessonType=${pricing.title.toLowerCase().includes('オンライン') || pricing.title.toLowerCase().includes('online') ? 'online' : 'in-person'}`}
-            className="bg-gray-900/50 border border-gray-800 rounded-xl p-6 lg:p-8 hover:border-[#3881ff]/50 transition-all duration-300 hover:shadow-xl hover:shadow-[#3881ff]/10 hover:scale-[1.02] cursor-pointer group"
+            className="bg-[var(--card)]/50 border border-[var(--border)] rounded-xl p-8 lg:p-10 hover:border-[#3881ff]/50 transition-all duration-300 hover:shadow-xl hover:shadow-[#3881ff]/10 hover:scale-[1.02] cursor-pointer group w-full max-w-sm"
           >
             {pricing.image && (
               <div className="relative aspect-square w-24 h-24 mx-auto mb-6 rounded-full overflow-hidden">
@@ -69,19 +69,19 @@ export default function PricingPage() {
             )}
             
             <div className="text-center space-y-4">
-              <h2 className="text-xl lg:text-2xl font-bold text-white group-hover:text-[#3881ff] transition-colors">
+              <h2 className="text-xl lg:text-2xl font-bold text-[var(--foreground)] group-hover:text-[#3881ff] transition-colors">
                 {pricing.title}
               </h2>
               
               <div className="text-2xl lg:text-3xl font-bold text-[#3881ff]">
                 {pricing.price}
-                <span className="text-sm text-gray-400 font-normal"><br />
+                <span className="text-sm text-[var(--muted-foreground)] font-normal"><br />
                   {pricing.unit}
                 </span>
               </div>
               
               {pricing.details && pricing.details.length > 0 && (
-                <ul className="space-y-2 text-left text-gray-300">
+                <ul className="space-y-2 text-left text-[var(--muted-foreground)]">
                   {pricing.details.map((detail, idx) => (
                     <li key={idx} className="flex items-start gap-2">
                       <span className="text-[#3881ff] mt-1">•</span>

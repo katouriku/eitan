@@ -52,12 +52,12 @@ export default function ContactPage() {
 
   if (success) {
     return (
-      <div className="bg-gray-900/50 border border-gray-800 p-8 rounded-2xl shadow-xl w-full flex flex-col items-center gap-6 max-w-lg mx-auto min-h-0 min-w-0 max-h-[90vh] justify-center hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
+      <div className="bg-[var(--card)]/50 border border-[var(--border)] p-8 rounded-2xl shadow-xl w-full flex flex-col items-center gap-6 max-w-lg mx-auto min-h-0 min-w-0 max-h-[90vh] justify-center hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
         <svg className="w-16 h-16 text-green-400 mb-2" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
         </svg>
         <div className="text-green-400 font-bold text-2xl mb-2">送信完了!</div>
-        <div className="text-gray-300 text-center">
+        <div className="text-[var(--muted-foreground)] text-center">
           お問い合わせいただきありがとうございます。<br />
           24時間以内にご返信いたします。
         </div>
@@ -77,15 +77,15 @@ export default function ContactPage() {
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#3881ff] leading-tight">
           お問い合わせ
         </h1>
-        <p className="text-lg text-gray-300">
+        <p className="text-lg text-[var(--muted-foreground)]">
           ご質問やご相談がございましたら、お気軽にお問い合わせください。
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6 bg-gray-900/50 border border-gray-800 p-8 rounded-2xl shadow-2xl backdrop-blur-sm hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
+      <form onSubmit={handleSubmit} className="space-y-6 bg-[var(--card)]/50 border border-[var(--border)] p-8 rounded-2xl shadow-2xl backdrop-blur-sm hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
         <div className="grid sm:grid-cols-2 gap-6">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-200 mb-2">
+            <label htmlFor="name" className="block text-sm font-medium text-[var(--foreground)] mb-2">
               お名前 <span className="text-red-400">*</span>
             </label>
             <input
@@ -95,13 +95,13 @@ export default function ContactPage() {
               value={formData.name}
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 rounded-lg bg-gray-700 border-2 border-gray-500 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all"
+              className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border-2 border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all"
               placeholder="山田太郎"
             />
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-200 mb-2">
+            <label htmlFor="email" className="block text-sm font-medium text-[var(--foreground)] mb-2">
               メールアドレス <span className="text-red-400">*</span>
             </label>
             <input
@@ -111,14 +111,14 @@ export default function ContactPage() {
               value={formData.email}
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 rounded-lg bg-gray-700 border-2 border-gray-500 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all"
+              className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border-2 border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all"
               placeholder="your@email.com"
             />
           </div>
         </div>
 
         <div>
-          <label htmlFor="subject" className="block text-sm font-medium text-gray-200 mb-2">
+          <label htmlFor="subject" className="block text-sm font-medium text-[var(--foreground)] mb-2">
             件名 <span className="text-red-400">*</span>
           </label>
           <input
@@ -128,13 +128,13 @@ export default function ContactPage() {
             value={formData.subject}
             onChange={handleChange}
             required
-            className="w-full px-4 py-3 rounded-lg bg-gray-700 border-2 border-gray-500 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all"
+            className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border-2 border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all"
             placeholder="お問い合わせの件名"
           />
         </div>
 
         <div>
-          <label htmlFor="message" className="block text-sm font-medium text-gray-200 mb-2">
+          <label htmlFor="message" className="block text-sm font-medium text-[var(--foreground)] mb-2">
             メッセージ <span className="text-red-400">*</span>
           </label>
           <textarea
@@ -144,7 +144,7 @@ export default function ContactPage() {
             onChange={handleChange}
             required
             rows={6}
-            className="w-full px-4 py-3 rounded-lg bg-gray-700 border-2 border-gray-500 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all resize-vertical"
+            className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border-2 border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all resize-vertical"
             placeholder="お問い合わせ内容をご記入ください..."
           />
         </div>

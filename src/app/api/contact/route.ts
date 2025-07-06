@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
 
     // Send confirmation email to the user
     await resend.emails.send({
-      from: 'luke@eigotankentai.com',
+      from: 'contact@eigotankentai.com',
       to: email,
       subject: 'お問い合わせを受付いたしました - 英語探検隊',
       html: `

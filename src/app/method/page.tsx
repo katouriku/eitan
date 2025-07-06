@@ -40,14 +40,14 @@ export default function MethodPage() {
 
   return (
     <div className="flex items-center justify-center min-h-[70vh] w-full px-4">
-      <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-8 shadow-2xl backdrop-blur-sm hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
+      <div className="bg-[var(--card)]/50 border border-[var(--border)] rounded-2xl p-8 shadow-2xl backdrop-blur-sm hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-center">
           {/* Content */}
           <div className="space-y-6 max-w-md">
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#3881ff] leading-tight">
               {method.title}
             </h1>
-            <div className="prose prose-lg prose-invert max-w-none text-gray-200">
+            <div className="prose prose-lg max-w-none text-[var(--foreground)]">
               {method.content && (
                 // @ts-expect-error - Sanity content types are dynamic
                 <PortableText value={method.content} />

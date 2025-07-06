@@ -27,18 +27,18 @@ export default function LoadingAnimation({
   if (fullScreen) {
     // Full screen overlay that doesn't affect layout
     return (
-      <div className="fixed inset-0 bg-[#18181b] z-50 flex flex-col items-center justify-center">
+      <div className="fixed inset-0 bg-[var(--background)] z-50 flex flex-col items-center justify-center">
         <div className="flex flex-col items-center justify-center space-y-6">
           {/* Loading spinner */}
           <div className="relative">
-            <div className="w-16 h-16 border-4 border-gray-700 border-t-[#3881ff] rounded-full animate-spin"></div>
+            <div className="w-16 h-16 border-4 border-[var(--muted)] border-t-[#3881ff] rounded-full animate-spin"></div>
             <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-r-[#5a9eff] rounded-full animate-spin animation-delay-150"></div>
           </div>
           
           {/* Loading text */}
           <div className="text-center">
-            <h2 className="text-xl font-semibold text-white mb-2">{message}</h2>
-            <p className="text-gray-400">{submessage}</p>
+            <h2 className="text-xl font-semibold text-[var(--foreground)] mb-2">{message}</h2>
+            <p className="text-[var(--muted-foreground)]">{submessage}</p>
           </div>
           
           {/* Loading dots animation */}
@@ -57,14 +57,14 @@ export default function LoadingAnimation({
     <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
       {/* Loading spinner */}
       <div className="relative">
-        <div className="w-12 h-12 border-4 border-gray-700 border-t-[#3881ff] rounded-full animate-spin"></div>
+        <div className="w-12 h-12 border-4 border-[var(--muted)] border-t-[#3881ff] rounded-full animate-spin"></div>
         <div className="absolute inset-0 w-12 h-12 border-4 border-transparent border-r-[#5a9eff] rounded-full animate-spin animation-delay-150"></div>
       </div>
       
       {/* Loading text */}
       <div className="text-center">
-        <h2 className="text-lg font-semibold text-white mb-2">{message}</h2>
-        <p className="text-gray-400 text-sm">{submessage}</p>
+        <h2 className="text-lg font-semibold text-[var(--foreground)] mb-2">{message}</h2>
+        <p className="text-[var(--muted-foreground)] text-sm">{submessage}</p>
       </div>
       
       {/* Loading dots animation */}
