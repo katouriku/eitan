@@ -13,7 +13,7 @@ function formatICSDate(date: Date) {
 }
 
 export async function POST(req: NextRequest) {
-  const { name, kana, email, date, duration, details, lessonType, participants, coupon, regularPrice, discountAmount, finalPrice } = await req.json();
+  const { name, kana, email, date, duration, details, lessonType, participants, coupon, regularPrice, discountAmount, finalPrice, paymentMethod } = await req.json();
   const start = new Date(date);
   const end = new Date(start.getTime() + (duration || 60) * 60000);
 
@@ -63,6 +63,15 @@ export async function POST(req: NextRequest) {
         <tr>
           <td style="padding: 8px 0; font-weight: bold; color: #555;">参加者数：</td>
           <td style="padding: 8px 0; color: #333;">${participants}名</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; font-weight: bold; color: #555;">支払い方法：</td>
+          <td style="padding: 8px 0; color: #333;">${
+            paymentMethod === 'free' ? '無料' : 
+            paymentMethod === 'cash' ? '現金（レッスン前）' : 
+            paymentMethod === 'card' ? 'クレジットカード' : 
+            'クレジットカード'
+          }</td>
         </tr>
       </table>
     </div>

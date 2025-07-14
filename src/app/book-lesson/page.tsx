@@ -108,6 +108,7 @@ export default function BookLessonPage() {
   const [customerEmail, setCustomerEmail] = useState("");
   const paymentFormRef = useRef<HTMLDivElement>(null);
   const lessonTypeParam = useQueryParam("lessonType");
+  const freeTrialParam = useQueryParam("freeTrial");
 
   // Coupon state
   const [coupon, setCoupon] = useState("");
@@ -115,6 +116,21 @@ export default function BookLessonPage() {
   const [priceLoading, setPriceLoading] = useState(false);
   const [priceError, setPriceError] = useState<string | null>(null);
   const [couponConfirmed, setCouponConfirmed] = useState(false);
+  const [isFreeTrialActive, setIsFreeTrialActive] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "cash">("card");
+
+  // Check if free trial is active from URL parameter
+  useEffect(() => {
+    if (freeTrialParam === "true") {
+      setCoupon("freelesson");
+      setCouponConfirmed(true);
+      setIsFreeTrialActive(true);
+      // Auto-update price when free trial is activated
+      if (lessonType && participants) {
+        updatePrice(lessonType, participants, "freelesson");
+      }
+    }
+  }, [freeTrialParam, lessonType, participants]);
 
   // Only update price when coupon is confirmed
   async function updatePrice(lessonType: string, participants: number, coupon: string) {
@@ -321,6 +337,9 @@ export default function BookLessonPage() {
       Cookies.remove("booking_lessonType");
       Cookies.remove("booking_clientSecret");
       Cookies.remove("booking_step");
+      
+      // Mark that user has booked a lesson
+      Cookies.set("user_has_booked", "true", { expires: 365 }); // Remember for 1 year
     }
   }, [step]);
 
@@ -504,6 +523,7 @@ export default function BookLessonPage() {
           regularPrice,
           discountAmount,
           finalPrice: computedFinalPrice,
+          paymentMethod: computedFinalPrice === 0 ? 'free' : paymentMethod,
         }),
       });
       const bookingData = await bookingRes.json();
@@ -545,6 +565,23 @@ export default function BookLessonPage() {
     const bookingDateTime = `${selectedDate}T${time24}:00+09:00`;
 
     try {
+      // If cash payment is selected, skip Stripe and go directly to booking
+      if (paymentMethod === "cash" && finalPrice !== 0) {
+        const emailSent = await sendBookingEmail({
+          name: nameValue,
+          email: emailValue,
+          kana: kanaValue,
+          date: bookingDateTime,
+          duration: 60,
+          details: `レッスン種別: ${lessonType}, 参加者数: ${participants}, 支払い方法: 現金 (レッスン前)`
+        });
+        if (emailSent) {
+          await refreshBookedSlots(); // Refresh the UI
+          setStep(3);
+        }
+        return;
+      }
+
       const res = await fetch("/api/create-payment-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -643,7 +680,7 @@ export default function BookLessonPage() {
     };
     
     return (
-      <div className="w-full max-w-4xl mx-auto mb-4 px-6 progress-container">
+      <div className="w-full max-w-4xl mx-auto mb-2 px-6 progress-container">
         <div className="relative">
           {/* Progress bar container */}
           <div className="relative progress-bar-height">
@@ -744,7 +781,16 @@ export default function BookLessonPage() {
                     <div className="btn-lesson-icon">💻</div>
                     <div className="btn-lesson-title">オンラインレッスン</div>
                     <div className="btn-lesson-subtitle">Discord, Zoomなど</div>
-                    <div className="text-[var(--primary)] font-bold text-lg mt-2">2,500円〜</div>
+                    <div className="text-[var(--primary)] font-bold text-lg mt-2">
+                      {isFreeTrialActive ? (
+                        <div className="flex items-center gap-2">
+                          <span className="line-through text-gray-500">2,500円〜</span>
+                          <span className="text-green-500">無料</span>
+                        </div>
+                      ) : (
+                        "2,500円〜"
+                      )}
+                    </div>
                   </div>
                 </button>
                 <button
@@ -755,7 +801,16 @@ export default function BookLessonPage() {
                     <div className="btn-lesson-icon">🏠</div>
                     <div className="btn-lesson-title">対面レッスン</div>
                     <div className="btn-lesson-subtitle">ご自宅または交流センター</div>
-                    <div className="text-[var(--primary)] font-bold text-lg mt-2">3,000円〜</div>
+                    <div className="text-[var(--primary)] font-bold text-lg mt-2">
+                      {isFreeTrialActive ? (
+                        <div className="flex items-center gap-2">
+                          <span className="line-through text-gray-500">3,000円〜</span>
+                          <span className="text-green-500">無料</span>
+                        </div>
+                      ) : (
+                        "3,000円〜"
+                      )}
+                    </div>
                   </div>
                 </button>
               </div>
@@ -1010,7 +1065,7 @@ export default function BookLessonPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-0">
+                  <div className="space-y-4">
                     <div>
                       <label className="block text-[var(--foreground)] font-medium mb-2 text-sm">クーポンコード（任意）</label>
                       <div className="flex gap-2">
@@ -1020,17 +1075,73 @@ export default function BookLessonPage() {
                           onChange={(e) => setCoupon(e.target.value)}
                           placeholder="クーポンコード"
                           className="flex-1 px-3 py-2 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] text-sm"
+                          disabled={isFreeTrialActive}
                         />
                         <button
                           type="button"
                           onClick={() => setCouponConfirmed(true)}
-                          disabled={!coupon || couponConfirmed || priceLoading}
+                          disabled={!coupon || couponConfirmed || priceLoading || isFreeTrialActive}
                           className="btn-success px-4 py-2 text-sm"
                         >
                           {couponConfirmed ? "適用済み" : "適用"}
                         </button>
                       </div>
+                      {isFreeTrialActive && (
+                        <div className="mt-2 text-sm text-green-600">
+                          無料体験レッスンが適用されています
+                        </div>
+                      )}
                     </div>
+
+                    {/* Payment Method Selection - Only show if not free */}
+                    {finalPrice !== 0 && (
+                      <div>
+                        <label className="block text-[var(--foreground)] font-medium mb-3 text-sm text-center">お支払い方法</label>
+                        <div className="bg-[var(--muted)]/30 p-4 rounded-xl border border-[var(--border)] backdrop-blur-sm">
+                          <div className="grid grid-cols-2 gap-4">
+                            <button
+                              type="button"
+                              onClick={() => setPaymentMethod("card")}
+                              className={`p-4 rounded-xl border-2 transition-all duration-300 shadow-lg hover:shadow-xl hover:transform hover:scale-105 ${
+                                paymentMethod === "card"
+                                  ? "border-blue-500 bg-gradient-to-br from-blue-500/40 to-blue-600/50 text-blue-700 dark:text-blue-300 shadow-blue-500/30 ring-2 ring-blue-500/40"
+                                  : "border-gray-300 dark:border-gray-600 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/40 text-gray-700 dark:text-gray-300 hover:border-blue-400 hover:from-blue-100 hover:to-blue-200 dark:hover:from-blue-800/50 dark:hover:to-blue-700/60"
+                              }`}
+                            >
+                              <div className="flex flex-col items-center gap-2">
+
+                                <span className="text-xl font-semibold">💳 カード</span>
+                              </div>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setPaymentMethod("cash")}
+                              className={`p-4 rounded-xl border-2 transition-all duration-300 shadow-lg hover:shadow-xl hover:transform hover:scale-105 ${
+                                paymentMethod === "cash"
+                                  ? "border-green-500 bg-gradient-to-br from-green-500/40 to-green-600/50 text-green-700 dark:text-green-300 shadow-green-500/30 ring-2 ring-green-500/40"
+                                  : "border-gray-300 dark:border-gray-600 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/40 text-gray-700 dark:text-gray-300 hover:border-green-400 hover:from-green-100 hover:to-green-200 dark:hover:from-green-800/50 dark:hover:to-green-700/60"
+                              }`}
+                            >
+                              <div className="flex flex-col items-center gap-2">
+   
+                                <span className="text-xl font-semibold">💰 現金</span>
+                              </div>
+                            </button>
+                          </div>
+                        </div>
+                        {paymentMethod === "cash" && (
+                          <div className="mt-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg text-sm text-yellow-800 dark:text-yellow-200">
+                            <div className="flex items-start gap-2">
+                              <span>ℹ️</span>
+                              <div>
+                                <strong>現金お支払いについて:</strong><br/>
+                                レッスン開始前に現金でのお支払いをお願いいたします。
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {formError && <div className="text-red-400 text-center mb-3 text-sm">{formError}</div>}
@@ -1048,7 +1159,9 @@ export default function BookLessonPage() {
                       disabled={formLoading}
                       className="btn-primary flex-1"
                     >
-                      {formLoading ? "処理中..." : finalPrice === 0 ? "予約確定" : "支払い"}
+                      {formLoading ? "処理中..." : 
+                       finalPrice === 0 ? "予約確定" : 
+                       paymentMethod === "cash" ? "現金予約確定" : "支払い"}
                     </button>
                   </div>
                 </form>

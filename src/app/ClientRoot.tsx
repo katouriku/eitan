@@ -5,6 +5,7 @@ import { groq } from "next-sanity";
 import { useEffect, useState, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import Cookies from "js-cookie";
 import "./globals.css";
 import { LoadingProvider } from "../contexts/LoadingContext";
 import { ThemeProvider } from "../contexts/ThemeContext";
@@ -41,6 +42,24 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
 
   // Hamburger menu state
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Free trial offer state
+  const [showFreeTrialOffer, setShowFreeTrialOffer] = useState(false);
+
+  // Check if user has already booked a lesson
+  useEffect(() => {
+    const hasBookedBefore = Cookies.get("user_has_booked") === "true";
+    const hasSeenOffer = Cookies.get("seen_free_trial_offer") === "true";
+    
+    // Show offer only if user hasn't booked before and hasn't seen the offer
+    setShowFreeTrialOffer(!hasBookedBefore && !hasSeenOffer);
+  }, []);
+
+  // Hide free trial offer
+  const hideFreeTrialOffer = () => {
+    setShowFreeTrialOffer(false);
+    Cookies.set("seen_free_trial_offer", "true", { expires: 30 }); // Remember for 30 days
+  };
 
   // Fetch navigation from Sanity (memoized)
   const fetchNav = useCallback(async () => {
@@ -154,31 +173,67 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
                 </div>
               </div>
             )}
-            <main className={`flex-1 flex flex-col min-h-0 ${pathname === '/book-lesson' ? 'pt-10' : 'pt-14 sm:pt-20'}`}>
+            
+            {/* Free Trial Offer Banner - Only show on homepage for eligible users */}
+            {pathname === "/" && showFreeTrialOffer && (
+              <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-3 mt-16 relative">
+                <div className="max-w-4xl mx-auto">
+                  <div className="flex items-center justify-between flex-col sm:flex-row gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="text-2xl">🎉</div>
+                      <div>
+                        <div className="font-bold text-lg">初回限定！無料体験レッスン</div>
+                        <div className="text-sm opacity-90">今なら体験レッスンを無料で受講できます</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Link
+                        href="/book-lesson?freeTrial=true"
+                        className="bg-white px-4 py-2 rounded-full font-bold hover:bg-green-50 transition-colors whitespace-nowrap"
+                        style={{ color: '#16a34a' }}
+                      >
+                        無料体験予約
+                      </Link>
+                      <button
+                        onClick={hideFreeTrialOffer}
+                        className="text-white hover:text-green-200 transition-colors p-1"
+                        aria-label="閉じる"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <main className={`flex-1 flex flex-col min-h-0 ${pathname === '/book-lesson' ? 'pt-4' : ''}`}>
               {pathname === "/" ? (
-                <section className="flex-1 flex items-center justify-center px-4 sm:px-6 min-h-0">
-                  <div className="max-w-4xl mx-auto text-center">
-                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-[#3881ff] mb-4 sm:mb-6 leading-tight"
-                        style={{textShadow:'0 4px 20px rgba(56,129,255,0.30)'}}>
-                      {homepage.mainTitle}
-                    </h1>
-                    <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-[var(--foreground)] mb-4 sm:mb-6 leading-relaxed">
-                      {homepage.subtitle}
-                    </h2>
-                    <p className="text-base sm:text-lg md:text-xl text-[var(--muted-foreground)] mb-10 sm:mb-12 leading-relaxed max-w-3xl mx-auto">
-                      {homepage.description}
-                    </p>
-                    <Link
-                      href={nav[0].href}
-                      className="inline-block px-6 sm:px-8 py-3 sm:py-4 rounded-full font-bold text-base sm:text-lg md:text-xl bg-gradient-to-r from-[#3881ff] to-[#5a9eff] text-white shadow-xl hover:from-[#5a9eff] hover:to-[#3881ff] hover:scale-105 transition-all duration-300 border-2 border-[#3881ff]/50 hover:border-[#5a9eff] focus:outline-none focus:ring-4 focus:ring-blue-200/50"
-                      style={{textShadow:'0 2px 8px rgba(0,0,0,0.20)', color: 'white'}}
-                    >
-                      {nav[0].label}
-                    </Link>
+                <section className="flex-1 relative min-h-0">
+                  <div className="absolute inset-0 flex items-center justify-center px-4 sm:px-6">
+                    <div className="max-w-4xl mx-auto text-center">
+                      <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-[#3881ff] mb-4 sm:mb-6 leading-tight"
+                          style={{textShadow:'0 4px 20px rgba(56,129,255,0.30)'}}>
+                        {homepage.mainTitle}
+                      </h1>
+                      <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-[var(--foreground)] mb-4 sm:mb-6 leading-relaxed">
+                        {homepage.subtitle}
+                      </h2>
+                      <p className="text-base sm:text-lg md:text-xl text-[var(--muted-foreground)] mb-10 sm:mb-12 leading-relaxed max-w-3xl mx-auto">
+                        {homepage.description}
+                      </p>
+                      <Link
+                        href={nav[0].href}
+                        className="inline-block px-6 sm:px-8 py-3 sm:py-4 rounded-full font-bold text-base sm:text-lg md:text-xl bg-gradient-to-r from-[#3881ff] to-[#5a9eff] text-white shadow-xl hover:from-[#5a9eff] hover:to-[#3881ff] hover:scale-105 transition-all duration-300 border-2 border-[#3881ff]/50 hover:border-[#5a9eff] focus:outline-none focus:ring-4 focus:ring-blue-200/50"
+                        style={{textShadow:'0 2px 8px rgba(0,0,0,0.20)', color: 'white'}}
+                      >
+                        {nav[0].label}
+                      </Link>
+                    </div>
                   </div>
                 </section>
               ) : (
-                <section className="flex-1 px-4 sm:px-6 py-6 sm:py-8 overflow-y-auto min-h-0">
+                <section className={`flex-1 px-4 sm:px-6 py-6 sm:py-8 overflow-y-auto min-h-0 ${pathname === '/book-lesson' ? 'pt-8 sm:pt-12' : 'pt-14 sm:pt-20'}`}>
                   <div className="max-w-4xl mx-auto">
                     {children}
                   </div>
