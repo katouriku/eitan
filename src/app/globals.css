@@ -48,24 +48,24 @@
 
 /* Dark theme variables (explicit) */
 .dark {
-  --background: #18181b;
-  --foreground: #ededed;
-  --card: #27272a;
-  --card-foreground: #fafafa;
-  --popover: #27272a;
-  --popover-foreground: #fafafa;
+  --background: #0f0f23;
+  --foreground: #f1f5f9;
+  --card: #1e1e2e;
+  --card-foreground: #f1f5f9;
+  --popover: #1e1e2e;
+  --popover-foreground: #f1f5f9;
   --primary: #3881ff;
   --primary-foreground: #ffffff;
-  --secondary: #27272a;
-  --secondary-foreground: #fafafa;
-  --muted: #27272a;
-  --muted-foreground: #a1a1aa;
-  --accent: #27272a;
-  --accent-foreground: #fafafa;
+  --secondary: #2a2a3a;
+  --secondary-foreground: #e2e8f0;
+  --muted: #374151;
+  --muted-foreground: #9ca3af;
+  --accent: #312e81;
+  --accent-foreground: #f1f5f9;
   --destructive: #dc2626;
   --destructive-foreground: #fafafa;
-  --border: #27272a;
-  --input: #27272a;
+  --border: #4b5563;
+  --input: #1e293b;
   --ring: #3881ff;
 }
 
@@ -108,8 +108,6 @@ a {
 
 /* Improve button styling */
 button {
-  border: none;
-  background: none;
   font-family: inherit;
   cursor: pointer;
 }
@@ -121,177 +119,7 @@ img {
   display: block;
 }
 
-/* Custom Button Classes */
-.btn-primary {
-  padding: 1rem 1.5rem;
-  border-radius: 9999px;
-  background: linear-gradient(to right, #3881ff, #5a9eff);
-  color: white;
-  font-weight: bold;
-  transition: all 0.3s;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  border: none;
-}
-
-.btn-primary:hover {
-  background: linear-gradient(to right, #5a9eff, #3881ff);
-  transform: scale(1.02);
-}
-
-.btn-primary:focus {
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(56, 129, 255, 0.3);
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.btn-secondary {
-  padding: 1rem 1.5rem;
-  border-radius: 9999px;
-  background: linear-gradient(to right, #6b7280, #9ca3af);
-  color: white;
-  font-weight: bold;
-  transition: all 0.3s;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-  border: 4px solid #9ca3af;
-}
-
-.btn-secondary:hover {
-  background: linear-gradient(to right, #9ca3af, #d1d5db);
-  transform: scale(1.02);
-  border-color: #d1d5db;
-}
-
-.btn-secondary:focus {
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(156, 163, 175, 0.3);
-}
-
-.btn-success {
-  padding: 0.75rem 1.5rem;
-  border-radius: 9999px;
-  background: linear-gradient(to right, #10b981, #059669);
-  color: white;
-  font-weight: bold;
-  transition: all 0.3s;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  border: none;
-}
-
-.btn-success:hover {
-  background: linear-gradient(to right, #34d399, #10b981);
-  transform: scale(1.05);
-}
-
-.btn-success:focus {
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.3);
-}
-
-.btn-success:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.btn-lesson {
-  position: relative;
-  padding: 1.5rem;
-  border-radius: 1rem;
-  border: 2px solid #4b5563;
-  background: rgba(31, 41, 55, 0.5);
-  transition: all 0.3s ease;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  transform: translateY(0);
-  text-align: left;
-  overflow: hidden;
-  width: 100%;
-  color: white;
-  font-weight: 600;
-  font-size: 1.125rem;
-}
-
-.light .btn-lesson {
-  border-color: #bfdbfe;
-  background: rgba(219, 234, 254, 0.8);
-  color: #1f2937;
-  box-shadow: 0 4px 12px rgba(56, 129, 255, 0.1);
-}
-
-.btn-lesson:hover {
-  border-color: #3881ff;
-  background: rgba(56, 129, 255, 0.1);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  transform: translateY(-4px) scale(1.02);
-}
-
-.btn-lesson:focus {
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(56, 129, 255, 0.3);
-}
-
-.btn-lesson-content {
-  position: relative;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.btn-lesson-icon {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-}
-
-.btn-lesson-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #ffffff;
-  margin-bottom: 0.5rem;
-}
-
-.light .btn-lesson-title {
-  color: #1f2937;
-}
-
-.btn-lesson-subtitle {
-  color: #d1d5db;
-  font-size: 0.875rem;
-  font-weight: 400;
-  opacity: 0.9;
-}
-
-.light .btn-lesson-subtitle {
-  color: #6b7280;
-}
-
-
-
-.btn-danger {
-  padding: 1rem 1.5rem;
-  border-radius: 9999px;
-  background: linear-gradient(to right, #dc2626, #b91c1c);
-  color: white;
-  font-weight: bold;
-  transition: all 0.3s;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-  border: none;
-}
-
-.btn-danger:hover {
-  background: linear-gradient(to right, #ef4444, #dc2626);
-  transform: scale(1.02);
-}
-
-.btn-danger:focus {
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.3);
-}
+/* Removed custom button classes to avoid conflicts with Tailwind */
 
 /* Animation classes */
 @keyframes fadeIn {
@@ -501,19 +329,13 @@ img {
   animation-delay: 400ms;
 }
 
-/* Form and input styles */
+/* Form and input styles - simplified */
 input, select, textarea {
-  background-color: var(--card);
-  border: 1px solid var(--border);
-  color: var(--foreground);
-  border-radius: var(--radius);
-  padding: 0.5rem 0.75rem;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 input:focus, select:focus, textarea:focus {
   outline: none;
-  border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(56, 129, 255, 0.1);
 }
 
@@ -528,86 +350,6 @@ input:focus, select:focus, textarea:focus {
   background: var(--primary) !important;
   border: 3px solid var(--primary-foreground) !important;
   color: var(--primary-foreground) !important;
-}
-
-/* Light theme progress bar line colors */
-
-/* Card styles */
-.card {
-  background-color: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--card-foreground);
-}
-
-/* Time slot styles */
-.time-slot {
-  background-color: var(--card);
-  border: 1px solid var(--border);
-  color: var(--card-foreground);
-  transition: all 0.2s ease;
-}
-
-.time-slot:hover:not(:disabled) {
-  background-color: var(--accent);
-  border-color: var(--primary);
-}
-
-.time-slot.selected {
-  background: linear-gradient(to right, #3881ff, #5a9eff);
-  border-color: #3881ff;
-  color: white;
-}
-
-.time-slot:disabled {
-  background-color: var(--muted);
-  color: var(--muted-foreground);
-  cursor: not-allowed;
-}
-
-.time-slot.unavailable {
-  background-color: #fef2f2;
-  border-color: #fecaca;
-  color: #dc2626;
-  text-decoration: line-through;
-}
-
-.dark .time-slot.unavailable {
-  background-color: #450a0a;
-  border-color: #7f1d1d;
-  color: #f87171;
-}
-
-/* Light mode button styles */
-.light .btn-success {
-  background: linear-gradient(to right, #059669, #047857);
-  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
-  border: none;
-}
-
-.light .btn-success:hover {
-  background: linear-gradient(to right, #10b981, #059669);
-  box-shadow: 0 6px 16px rgba(5, 150, 105, 0.4);
-}
-
-.light .btn-danger {
-  background: linear-gradient(to right, #dc2626, #b91c1c);
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
-  border: none;
-}
-
-.light .btn-danger:hover {
-  background: linear-gradient(to right, #ef4444, #dc2626);
-  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4);
-}
-
-.light .btn-primary {
-  box-shadow: 0 4px 12px rgba(56, 129, 255, 0.3);
-  border: none;
-}
-
-.light .btn-primary:hover {
-  box-shadow: 0 6px 16px rgba(56, 129, 255, 0.4);
 }
 
 /* PortableText styling for both themes */

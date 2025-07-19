@@ -176,27 +176,31 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
             
             {/* Free Trial Offer Banner - Only show on homepage for eligible users */}
             {pathname === "/" && showFreeTrialOffer && (
-              <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-3 mt-16 relative">
+              <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-2 sm:px-4 sm:py-3 mt-16 relative">
                 <div className="max-w-4xl mx-auto">
-                  <div className="flex items-center justify-between flex-col sm:flex-row gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="text-2xl">🎉</div>
-                      <div>
-                        <div className="font-bold text-lg">初回限定！無料体験レッスン</div>
-                        <div className="text-sm opacity-90">今なら体験レッスンを無料で受講できます</div>
+                  <div className="flex items-center justify-between gap-2 sm:gap-4">
+                    <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
+                      <div className="text-lg sm:text-2xl flex-shrink-0">🎉</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-bold text-sm sm:text-lg whitespace-nowrap overflow-hidden text-ellipsis">
+                          初回限定！無料体験レッスン
+                        </div>
+                        <div className="text-xs sm:text-sm opacity-90 hidden sm:block">
+                          今なら体験レッスンを無料で受講できます
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                       <Link
                         href="/book-lesson?freeTrial=true"
-                        className="bg-white px-4 py-2 rounded-full font-bold hover:bg-green-50 transition-colors whitespace-nowrap"
+                        className="bg-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-bold text-sm sm:text-base hover:bg-green-50 transition-colors whitespace-nowrap"
                         style={{ color: '#16a34a' }}
                       >
                         無料体験予約
                       </Link>
                       <button
                         onClick={hideFreeTrialOffer}
-                        className="text-white hover:text-green-200 transition-colors p-1"
+                        className="text-white hover:text-green-200 transition-colors p-1 text-sm sm:text-base"
                         aria-label="閉じる"
                       >
                         ✕
@@ -207,7 +211,7 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
               </div>
             )}
             
-            <main className={`flex-1 flex flex-col min-h-0 ${pathname === '/book-lesson' ? 'pt-4' : ''}`}>
+            <main className={`flex-1 flex flex-col min-h-0 ${pathname === '/book-lesson' ? 'pt-8 md:pt-0' : 'pt-0'}`}>
               {pathname === "/" ? (
                 <section className="flex-1 relative min-h-0">
                   <div className="absolute inset-0 flex items-center justify-center px-4 sm:px-6">
@@ -232,9 +236,15 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
                     </div>
                   </div>
                 </section>
+              ) : pathname === '/book-lesson' ? (
+                <section className="flex-1 px-4 sm:px-6 py-6 sm:py-8 overflow-y-auto min-h-0 pt-8 sm:pt-12 flex items-center justify-center">
+                  <div className="max-w-4xl mx-auto w-full">
+                    {children}
+                  </div>
+                </section>
               ) : (
-                <section className={`flex-1 px-4 sm:px-6 py-6 sm:py-8 overflow-y-auto min-h-0 ${pathname === '/book-lesson' ? 'pt-8 sm:pt-12' : 'pt-14 sm:pt-20'}`}>
-                  <div className="max-w-4xl mx-auto">
+                <section className="flex-1 px-4 sm:px-6 overflow-y-auto min-h-0 pt-20 sm:pt-24 md:pt-20 flex items-center justify-center">
+                  <div className="max-w-4xl mx-auto w-full py-6 sm:py-8">
                     {children}
                   </div>
                 </section>
@@ -262,4 +272,7 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
       </ThemeProvider>
     );
   }
+
+  // Studio pages - render children directly without layout
+  return children;
 }

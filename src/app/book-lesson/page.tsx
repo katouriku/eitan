@@ -97,7 +97,7 @@ export default function BookLessonPage() {
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [step, setStepState] = useState<1 | 2 | 3>(1);
-  const [substep, setSubstep] = useState<1 | 2 | 3 | 4>(1); // 1: participants, 2: contact info, 3: date/time, 4: price/payment
+  const [substep, setSubstep] = useState<1 | 2 | 3>(1); // 1: participants+contact, 2: date/time, 3: price/payment
   const [lessonType, setLessonType] = useState<"online" | "in-person" | "">("");
   const [participants, setParticipants] = useState(1);
   const [showParticipantWarning, setShowParticipantWarning] = useState(false);
@@ -278,13 +278,11 @@ export default function BookLessonPage() {
     // Restore progress - advance to appropriate substep if data exists
     if (savedLessonType && !lessonTypeParam) {
       if (savedName && savedKana && savedEmail && savedDate && savedTime) {
-        setSubstep(4); // Go to payment step if all info is filled
+        setSubstep(3); // Go to payment step if all info is filled
       } else if (savedName && savedKana && savedEmail) {
-        setSubstep(3); // Go to date/time step if contact info is filled
-      } else if (savedParticipants) {
-        setSubstep(2); // Go to contact step if participants is set
+        setSubstep(2); // Go to date/time step if contact info is filled
       } else {
-        setSubstep(1); // Start with participants
+        setSubstep(1); // Start with participants + contact info
       }
     }
   }, [lessonTypeParam]);
@@ -646,19 +644,19 @@ export default function BookLessonPage() {
   }
 
   // Progress bar component
-  function ProgressBar({ step, substep }: { step: 1 | 2 | 3, substep?: 1 | 2 | 3 | 4 }) {
-    // Convert to unified 6-step system: 1=lesson type, 2=participants, 3=contact, 4=date/time, 5=payment, 6=confirmation
+  function ProgressBar({ step, substep }: { step: 1 | 2 | 3, substep?: 1 | 2 | 3 }) {
+    // Convert to unified 5-step system: 1=lesson type, 2=participants+contact, 3=date/time, 4=payment, 5=confirmation
     let currentStep = 1;
     if (step === 1) {
       if (lessonType === "") currentStep = 1; // lesson type selection
-      else currentStep = substep ? substep + 1 : 2; // substeps 1-4 become steps 2-5
+      else currentStep = substep ? substep + 1 : 2; // substeps 1-3 become steps 2-4
     } else if (step === 2) {
-      currentStep = 5; // payment
+      currentStep = 4; // payment
     } else if (step === 3) {
-      currentStep = 6; // confirmation
+      currentStep = 5; // confirmation
     }
 
-    const stepLabels = ["タイプ", "人数", "連絡先", "日時", "支払い", "完了"];
+    const stepLabels = ["タイプ", "情報", "日時", "支払い", "完了"];
     
     // Handle clicking on completed steps
     const handleStepClick = (stepNum: number) => {
@@ -669,13 +667,11 @@ export default function BookLessonPage() {
         setLessonType("");
         setSubstep(1);
       } else if (stepNum === 2 && lessonType) {
-        setSubstep(1); // participants
+        setSubstep(1); // participants + contact
       } else if (stepNum === 3 && lessonType) {
-        setSubstep(2); // contact info
+        setSubstep(2); // date/time
       } else if (stepNum === 4 && lessonType) {
-        setSubstep(3); // date/time
-      } else if (stepNum === 5 && lessonType) {
-        setSubstep(4); // payment
+        setSubstep(3); // payment
       }
     };
     
@@ -700,7 +696,7 @@ export default function BookLessonPage() {
               style={{ 
                 top: '100%',
                 transform: 'translateY(-50%)',
-                width: currentStep === 1 ? '0px' : `calc((100% - var(--progress-offset, 50px)) * ${(currentStep - 1) / 5})`,
+                width: currentStep === 1 ? '0px' : `calc((100% - var(--progress-offset, 50px)) * ${(currentStep - 1) / 4})`,
                 zIndex: 2
               }}
             />
@@ -708,7 +704,7 @@ export default function BookLessonPage() {
           
           {/* Step circles and labels combined */}
           <div className="flex items-start justify-between progress-bar-container progress-bar-margin">
-            {[1, 2, 3, 4, 5, 6].map((stepNum) => (
+            {[1, 2, 3, 4, 5].map((stepNum) => (
               <div key={stepNum} className="flex flex-col items-center">
                 <button
                   onClick={() => handleStepClick(stepNum)}
@@ -743,7 +739,7 @@ export default function BookLessonPage() {
   return (
     <main className="flex flex-col flex-1 min-w-0 w-full">
       <section className="flex flex-col items-center justify-center w-full px-4">
-        <div className="flex flex-col items-center justify-center max-w-2xl min-w-[340px] w-full order-2 md:order-none min-h-0">
+        <div className="flex flex-col items-center justify-center max-w-7xl min-w-[340px] w-full order-2 md:order-none min-h-0">
           <ProgressBar step={step} substep={step === 1 ? substep : undefined} />
           
           {/* Price display - always reserve space to prevent layout shifts */}
@@ -764,27 +760,29 @@ export default function BookLessonPage() {
           )}
           {/* If lessonType is set from query, skip selection and go to step 1 form */}
           {step === 1 && lessonType === "" && (
-            <div className="bg-[var(--card)]/50 border border-[var(--border)] p-8 rounded-2xl shadow-2xl w-full max-w-2xl mx-auto backdrop-blur-sm hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
-              <div className="text-center mb-12">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-[#3881ff] to-[#5a9eff] rounded-full mb-6 shadow-lg">
+            <div className="bg-[var(--card)] border border-[var(--border)] p-8 rounded-2xl shadow-lg w-full max-w-2xl mx-auto hover:shadow-xl transition-all duration-300">
+              <div className="text-center mb-10">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-[#3881ff] to-[#5a9eff] rounded-full mb-6 shadow-md">
                   <span className="text-2xl">📚</span>
                 </div>
-                <h3 className="text-3xl text-[var(--foreground)] font-bold mb-2">レッスンの種類を選択してください</h3>
-                <div className="w-40 h-1 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] mx-auto rounded-full"></div>
+                <h3 className="text-3xl text-[var(--foreground)] font-bold mb-3">レッスンの種類を選択してください</h3>
+                <div className="w-32 h-1 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] mx-auto rounded-full"></div>
               </div>
               <div className="grid md:grid-cols-2 gap-6">
                 <button
-                  className="btn-lesson"
+                  className="group relative p-6 rounded-xl border-2 border-[var(--border)] bg-[var(--card)] hover:border-[#3881ff] hover:bg-[var(--muted)]/30 transition-all duration-300 shadow-sm hover:shadow-md"
                   onClick={() => setLessonType("online")}
                 >
-                  <div className="btn-lesson-content">
-                    <div className="btn-lesson-icon">💻</div>
-                    <div className="btn-lesson-title">オンラインレッスン</div>
-                    <div className="btn-lesson-subtitle">Discord, Zoomなど</div>
-                    <div className="text-[var(--primary)] font-bold text-lg mt-2">
+                  <div className="text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-2xl shadow-md group-hover:scale-105 transition-transform duration-300">
+                      💻
+                    </div>
+                    <div className="text-xl font-bold text-[var(--foreground)] mb-2">オンラインレッスン</div>
+                    <div className="text-sm text-[var(--muted-foreground)] mb-4">Discord, Zoomなど</div>
+                    <div className="text-[#3881ff] font-bold text-lg">
                       {isFreeTrialActive ? (
-                        <div className="flex items-center gap-2">
-                          <span className="line-through text-gray-500">2,500円〜</span>
+                        <div className="flex items-center justify-center gap-2">
+                          <span className="line-through text-[var(--muted-foreground)]">2,500円〜</span>
                           <span className="text-green-500">無料</span>
                         </div>
                       ) : (
@@ -794,17 +792,19 @@ export default function BookLessonPage() {
                   </div>
                 </button>
                 <button
-                  className="btn-lesson"
+                  className="group relative p-6 rounded-xl border-2 border-[var(--border)] bg-[var(--card)] hover:border-[#3881ff] hover:bg-[var(--muted)]/30 transition-all duration-300 shadow-sm hover:shadow-md"
                   onClick={() => setLessonType("in-person")}
                 >
-                  <div className="btn-lesson-content">
-                    <div className="btn-lesson-icon">🏠</div>
-                    <div className="btn-lesson-title">対面レッスン</div>
-                    <div className="btn-lesson-subtitle">ご自宅または交流センター</div>
-                    <div className="text-[var(--primary)] font-bold text-lg mt-2">
+                  <div className="text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-2xl shadow-md group-hover:scale-105 transition-transform duration-300">
+                      🏠
+                    </div>
+                    <div className="text-xl font-bold text-[var(--foreground)] mb-2">対面レッスン</div>
+                    <div className="text-sm text-[var(--muted-foreground)] mb-4">ご自宅または交流センター</div>
+                    <div className="text-[#3881ff] font-bold text-lg">
                       {isFreeTrialActive ? (
-                        <div className="flex items-center gap-2">
-                          <span className="line-through text-gray-500">3,000円〜</span>
+                        <div className="flex items-center justify-center gap-2">
+                          <span className="line-through text-[var(--muted-foreground)]">3,000円〜</span>
                           <span className="text-green-500">無料</span>
                         </div>
                       ) : (
@@ -814,71 +814,55 @@ export default function BookLessonPage() {
                   </div>
                 </button>
               </div>
-              <div className="text-sm text-[var(--muted-foreground)] mt-6 text-center bg-[var(--muted)]/60 p-4 rounded-xl border border-[var(--border)]">
+              <div className="text-sm text-[var(--muted-foreground)] mt-8 text-center bg-[var(--muted)]/30 p-4 rounded-xl border border-[var(--border)]">
                 ※ 対面レッスンは美里町から30分以内の場所のみ対応しています。
               </div>
             </div>
           )}
           {step === 1 && lessonType !== "" && (
             <div className="space-y-6 w-full max-w-6xl mx-auto">
-              {/* Stage 1: Participants */}
+              {/* Combined Stage 1: Participants and Contact Info */}
               {substep === 1 && (
-                <div className="bg-[var(--card)]/50 border border-[var(--border)] p-6 rounded-xl shadow-xl hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300 max-w-sm mx-auto">
-                  <h3 className="text-2xl text-[var(--foreground)] text-center font-bold">参加者数を選択</h3>
-                  <div className="flex items-center justify-center mt-8 gap-4">
-                    <button
-                      type="button"
-                      className="px-3 py-2 rounded-lg bg-gradient-to-br from-[var(--muted)] to-[var(--secondary)] text-[#3881ff] font-bold text-lg border-2 border-[#3881ff] hover:from-[#3881ff] hover:to-[#5a9eff] hover:text-black hover:scale-110 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100 shadow-lg flex items-center justify-center min-w-[40px]"
-                      onClick={() => setParticipants(Math.max(1, participants - 1))}
-                      disabled={participants <= 1}
-                    >-</button>
-                    <div className="text-center px-4">
-                      <div className="text-4xl font-bold text-[var(--foreground)]">{participants}</div>
-                      <div className="text-[var(--muted-foreground)] text-sm">名</div>
+                <div className="bg-[var(--card)] border border-[var(--border)] p-8 rounded-xl shadow-lg max-w-2xl mx-auto hover:shadow-xl transition-all duration-300">
+                  
+                  {/* Participants Section */}
+                  <div className="mb-6">
+                    <h4 className="text-lg text-[var(--foreground)] font-semibold text-center">参加者数を選択</h4>
+                    <div className="flex items-center justify-center mt-4 gap-4">
+                      <button
+                        type="button"
+                        className="w-12 h-12 rounded-xl bg-[var(--muted)] hover:bg-[var(--muted)]/80 text-[#3881ff] font-bold text-xl border-2 border-[var(--border)] hover:border-[#3881ff] transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100 shadow-sm hover:shadow-md flex items-center justify-center"
+                        onClick={() => setParticipants(Math.max(1, participants - 1))}
+                        disabled={participants <= 1}
+                      >-</button>
+                      <div className="text-center px-6">
+                        <div className="text-3xl font-bold text-[var(--foreground)]">{participants}</div>
+                        <div className="text-[var(--muted-foreground)] text-sm">名</div>
+                      </div>
+                      <button
+                        type="button"
+                        className="w-12 h-12 rounded-xl bg-[var(--muted)] hover:bg-[#3881ff] text-[#3881ff] hover:text-white font-bold text-xl border-2 border-[var(--border)] hover:border-[#3881ff] transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100 shadow-sm hover:shadow-md flex items-center justify-center"
+                        onClick={() => {
+                          if (participants < 5) {
+                            setParticipants(participants + 1);
+                          } else {
+                            setShowParticipantWarning(true);
+                          }
+                        }}
+                        disabled={participants >= 5}
+                      >+</button>
                     </div>
-                    <button
-                      type="button"
-                      className="px-3 py-2 rounded-lg bg-gradient-to-br from-[var(--muted)] to-[var(--secondary)] text-[#3881ff] font-bold text-lg border-2 border-[#3881ff] hover:from-[#3881ff] hover:to-[#5a9eff] hover:text-black hover:scale-110 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100 shadow-lg flex items-center justify-center min-w-[40px]"
-                      onClick={() => {
-                        if (participants < 5) {
-                          setParticipants(participants + 1);
-                        } else {
-                          setShowParticipantWarning(true);
-                        }
-                      }}
-                      disabled={participants >= 5}
-                    >+</button>
+                    {showParticipantWarning && (
+                      <div className="text-amber-600 dark:text-amber-400 text-sm text-center mt-4 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-200 dark:border-amber-800">
+                        参加者は最大5名までです。
+                      </div>
+                    )}
                   </div>
-                  {showParticipantWarning && (
-                    <div className="text-yellow-400 text-sm text-center mt-4 bg-yellow-900/20 p-3 rounded-lg">
-                      参加者は最大5名までです。
-                    </div>
-                  )}
-                  <div className="flex gap-3 mt-8 justify-center">
-                    <button
-                      type="button"
-                      onClick={() => setLessonType("")}
-                      className="btn-danger w-24"
-                    >
-                      戻る
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSubstep(2)}
-                      className="btn-primary w-24"
-                    >
-                      次へ
-                    </button>
-                  </div>
-                </div>
-              )}
 
-              {/* Stage 2: Contact Info */}
-              {substep === 2 && (
-                <div className="bg-[var(--card)]/50 border border-[var(--border)] p-8 rounded-xl shadow-xl hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300 max-w-2xl mx-auto">
-                  <h3 className="text-2xl text-[var(--foreground)] text-center font-bold">お客様情報</h3>
+                  {/* Contact Info Section */}
                   <div className="space-y-4">
-                    <div className="grid sm:grid-cols-2 gap-4 mt-10">
+                    <h4 className="text-lg text-[var(--foreground)] font-semibold text-center">お客様情報</h4>
+                    <div className="grid sm:grid-cols-2 gap-4 mt-4">
                       <div>
                         <label className="block text-[var(--foreground)] font-medium mb-2">お名前（漢字）</label>
                         <input
@@ -886,7 +870,7 @@ export default function BookLessonPage() {
                           value={customerName}
                           onChange={(e) => setCustomerName(e.target.value)}
                           placeholder="例: 山田 太郎"
-                          className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] min-w-0"
+                          className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
                           required
                         />
                       </div>
@@ -897,7 +881,7 @@ export default function BookLessonPage() {
                           value={customerKana}
                           onChange={(e) => setCustomerKana(e.target.value)}
                           placeholder="例: ヤマダ タロウ"
-                          className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] min-w-0"
+                          className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
                           required
                         />
                       </div>
@@ -911,24 +895,25 @@ export default function BookLessonPage() {
                         placeholder="例: your@email.com"
                         pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
                         title="有効なメールアドレスを入力してください"
-                        className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] min-w-0"
+                        className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
                         required
                       />
                     </div>
                   </div>
+                  
                   <div className="flex gap-4 mt-8">
                     <button
                       type="button"
-                      onClick={() => setSubstep(1)}
-                      className="btn-danger flex-1"
+                      onClick={() => setLessonType("")}
+                      className="flex-1 px-6 py-3 bg-[var(--muted)] hover:bg-[var(--muted)]/80 text-[var(--foreground)] font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md"
                     >
                       戻る
                     </button>
                     <button
                       type="button"
-                      onClick={() => setSubstep(3)}
+                      onClick={() => setSubstep(2)}
                       disabled={!customerName || !customerKana || !customerEmail}
-                      className="btn-primary flex-1"
+                      className="flex-1 px-6 py-3 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] hover:from-[#2563eb] hover:to-[#3b82f6] text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
                     >
                       次へ
                     </button>
@@ -936,13 +921,11 @@ export default function BookLessonPage() {
                 </div>
               )}
 
-              {/* Stage 3: Date and Time */}
-              {substep === 3 && (
-                <div className={`bg-[var(--card)]/50 border border-[var(--border)] p-8 rounded-xl shadow-xl hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-700 ease-out ${
-                  selectedDate ? 'max-w-none' : 'max-w-md mx-auto'
-                }`}>
+              {/* Stage 2: Date and Time */}
+              {substep === 2 && (
+                <div className="bg-[var(--card)] border border-[var(--border)] p-4 lg:p-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-700 ease-out w-full lg:w-fit mx-auto lg:min-w-[400px]">
                   {/* Dynamic container that grows when date is selected */}
-                  <div className={`flex flex-col lg:flex-row lg:gap-6 space-y-6 lg:space-y-0 w-full transition-all duration-700 ease-out ${
+                  <div className={`flex flex-col lg:flex-row lg:gap-8 space-y-6 lg:space-y-0 w-full transition-all duration-700 ease-out ${
                     selectedDate ? 'lg:justify-start' : 'lg:justify-center'
                   }`}>
                     {/* Calendar Section */}
@@ -959,8 +942,8 @@ export default function BookLessonPage() {
                       {/* Return button positioned below calendar on desktop only */}
                       <button
                         type="button"
-                        onClick={() => setSubstep(2)}
-                        className="btn-danger w-full mt-4 hidden lg:block"
+                        onClick={() => setSubstep(1)}
+                        className="w-full mt-4 px-6 py-3 bg-[var(--muted)] hover:bg-[var(--muted)]/80 text-[var(--foreground)] font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md hidden lg:block"
                       >
                         戻る
                       </button>
@@ -976,12 +959,9 @@ export default function BookLessonPage() {
                         <div className="animate-fadeIn">
                           {getTimesForDate(selectedDate).length > 0 ? (
                             <div 
-                              className="grid gap-2 w-full"
+                              className="flex flex-col lg:flex-wrap gap-1 w-full lg:w-auto"
                               style={{
-                                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-                                maxHeight: '400px', // Match approximate calendar height
-                                gridAutoFlow: 'column',
-                                gridTemplateRows: 'repeat(8, minmax(45px, auto))'
+                                maxHeight: '450px', // Match calendar + return button height
                               }}
                             >
                               {getTimesForDate(selectedDate).map((slot) => (
@@ -992,17 +972,17 @@ export default function BookLessonPage() {
                                     if (!slot.disabled) {
                                       setSelectedTime(slot.value);
                                       // Auto-advance to next step when time is selected
-                                      setTimeout(() => setSubstep(4), 300);
+                                      setTimeout(() => setSubstep(3), 300);
                                     }
                                   }}
                                   disabled={slot.disabled}
                                   className={`
-                                    px-3 py-2 rounded-xl text-sm font-semibold transition-all duration-300 border-2 whitespace-nowrap h-[46px] relative shadow-lg
+                                    px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 border-2 lg:whitespace-nowrap relative shadow-sm w-full lg:w-40 flex-shrink-0 h-12
                                     ${slot.disabled
-                                      ? 'bg-red-900/60 text-red-300 border-red-700/60 cursor-not-allowed opacity-80 line-through decoration-red-400 decoration-2'
+                                      ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 cursor-not-allowed opacity-80 line-through decoration-red-400 decoration-2'
                                       : selectedTime === slot.value
-                                      ? 'bg-gradient-to-br from-[#3881ff] to-[#5a9eff] text-blue-500 border-[#3881ff] shadow-xl ring-2 ring-[#3881ff]/40 transform scale-105 z-10'
-                                      : 'bg-gradient-to-br from-[var(--muted)] to-[var(--secondary)] text-[var(--foreground)] border-[var(--border)] hover:from-[#3881ff] hover:to-[#5a9eff] hover:border-[#3881ff] hover:shadow-xl hover:transform hover:scale-105 hover:ring-2 hover:ring-[#3881ff]/30'
+                                      ? 'bg-[#3881ff] text-white border-[#3881ff] shadow-lg ring-2 ring-[#3881ff]/30 transform scale-105 z-10'
+                                      : 'bg-[var(--card)] text-[var(--foreground)] border-[var(--border)] hover:border-[#3881ff] hover:bg-[var(--muted)]/50 hover:shadow-md hover:transform hover:scale-105'
                                     }
                                   `}
                                 >
@@ -1015,7 +995,7 @@ export default function BookLessonPage() {
                               ))}
                             </div>
                           ) : (
-                            <div className="text-center py-8 text-[var(--muted-foreground)] bg-[var(--muted)]/50 rounded-lg border border-[var(--border)] animate-fadeIn">
+                            <div className="text-center py-8 text-[var(--muted-foreground)] bg-[var(--muted)]/30 rounded-lg border border-[var(--border)] animate-fadeIn">
                               <div className="text-lg font-medium">この日は満席です</div>
                               <div className="text-sm mt-1">他の日を選択してください</div>
                             </div>
@@ -1026,11 +1006,11 @@ export default function BookLessonPage() {
                   </div>
                   
                   {/* Return button for mobile - appears below timeslots */}
-                  <div className="mt-10 lg:hidden flex justify-center">
+                  <div className="mt-8 lg:hidden flex justify-center">
                     <button
                       type="button"
-                      onClick={() => setSubstep(2)}
-                      className="btn-danger w-full px-8 py-2"
+                      onClick={() => setSubstep(1)}
+                      className="w-full px-6 py-3 bg-[var(--muted)] hover:bg-[var(--muted)]/80 text-[var(--foreground)] font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md"
                     >
                       戻る
                     </button>
@@ -1038,130 +1018,197 @@ export default function BookLessonPage() {
                 </div>
               )}
 
-              {/* Stage 4: Price and Payment */}
-              {substep === 4 && (
-                <form onSubmit={handleSubmit} className="bg-[var(--card)]/50 border border-[var(--border)] p-8 rounded-xl shadow-xl hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300 max-w-lg mx-auto">
+              {/* Stage 3: Price and Payment */}
+              {substep === 3 && (
+                <form onSubmit={handleSubmit} className="bg-[var(--card)] border border-[var(--border)] p-4 lg:p-6 xl:p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 w-full max-w-2xl lg:max-w-6xl mx-auto">
                   <input type="hidden" name="lessonType" value={lessonType} />
                   <input type="hidden" name="name" value={customerName} />
                   <input type="hidden" name="kana" value={customerKana} />
                   <input type="hidden" name="email" value={customerEmail} />
                   <input type="hidden" name="participants" value={participants} />
                   
-                  <h3 className="text-xl text-[var(--foreground)] text-center font-bold">料金確認・お支払い</h3>
-                  
-                  {/* Summary */}
-                  <div className="bg-[var(--muted)]/50 p-3 mt-3 rounded-lg mb-4 space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-[var(--muted-foreground)]">レッスン形式:</span>
-                      <span className="text-[var(--foreground)]">{lessonType === 'online' ? 'オンライン' : '対面'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[var(--muted-foreground)]">参加者数:</span>
-                      <span className="text-[var(--foreground)]">{participants}名</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-[var(--muted-foreground)]">日時:</span>
-                      <span className="text-[var(--foreground)]">{selectedDate} {selectedTime}</span>
-                    </div>
+                  {/* Header */}
+                  <div className="text-center mb-4 lg:mb-6 xl:mb-8">
+                    <h3 className="text-xl lg:text-2xl xl:text-3xl text-[var(--foreground)] font-bold mb-3">料金確認・お支払い</h3>
+                    <div className="w-24 lg:w-32 xl:w-40 h-1 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] mx-auto rounded-full"></div>
                   </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-[var(--foreground)] font-medium mb-2 text-sm">クーポンコード（任意）</label>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={coupon}
-                          onChange={(e) => setCoupon(e.target.value)}
-                          placeholder="クーポンコード"
-                          className="flex-1 px-3 py-2 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] text-sm"
-                          disabled={isFreeTrialActive}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setCouponConfirmed(true)}
-                          disabled={!coupon || couponConfirmed || priceLoading || isFreeTrialActive}
-                          className="btn-success px-4 py-2 text-sm"
-                        >
-                          {couponConfirmed ? "適用済み" : "適用"}
-                        </button>
-                      </div>
-                      {isFreeTrialActive && (
-                        <div className="mt-2 text-sm text-green-600">
-                          無料体験レッスンが適用されています
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Payment Method Selection - Only show if not free */}
-                    {finalPrice !== 0 && (
-                      <div>
-                        <label className="block text-[var(--foreground)] font-medium mb-3 text-sm text-center">お支払い方法</label>
-                        <div className="bg-[var(--muted)]/30 p-4 rounded-xl border border-[var(--border)] backdrop-blur-sm">
-                          <div className="grid grid-cols-2 gap-4">
-                            <button
-                              type="button"
-                              onClick={() => setPaymentMethod("card")}
-                              className={`p-4 rounded-xl border-2 transition-all duration-300 shadow-lg hover:shadow-xl hover:transform hover:scale-105 ${
-                                paymentMethod === "card"
-                                  ? "border-blue-500 bg-gradient-to-br from-blue-500/40 to-blue-600/50 text-blue-700 dark:text-blue-300 shadow-blue-500/30 ring-2 ring-blue-500/40"
-                                  : "border-gray-300 dark:border-gray-600 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/40 text-gray-700 dark:text-gray-300 hover:border-blue-400 hover:from-blue-100 hover:to-blue-200 dark:hover:from-blue-800/50 dark:hover:to-blue-700/60"
-                              }`}
-                            >
-                              <div className="flex flex-col items-center gap-2">
-
-                                <span className="text-xl font-semibold">💳 カード</span>
-                              </div>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setPaymentMethod("cash")}
-                              className={`p-4 rounded-xl border-2 transition-all duration-300 shadow-lg hover:shadow-xl hover:transform hover:scale-105 ${
-                                paymentMethod === "cash"
-                                  ? "border-green-500 bg-gradient-to-br from-green-500/40 to-green-600/50 text-green-700 dark:text-green-300 shadow-green-500/30 ring-2 ring-green-500/40"
-                                  : "border-gray-300 dark:border-gray-600 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/40 text-gray-700 dark:text-gray-300 hover:border-green-400 hover:from-green-100 hover:to-green-200 dark:hover:from-green-800/50 dark:hover:to-green-700/60"
-                              }`}
-                            >
-                              <div className="flex flex-col items-center gap-2">
-   
-                                <span className="text-xl font-semibold">💰 現金</span>
-                              </div>
-                            </button>
+                  
+                  {/* Responsive Layout */}
+                  <div className="flex flex-col lg:grid lg:grid-cols-2 gap-4 lg:gap-6 xl:gap-8">
+                    
+                    {/* Left Column - Summary & Coupon */}
+                    <div className="space-y-6">
+                      {/* Summary Card */}
+                      <div className="bg-[var(--muted)]/30 p-4 lg:p-6 rounded-xl border border-[var(--border)]">
+                        <h4 className="text-lg font-semibold text-[var(--foreground)] mb-4 text-center lg:text-left">予約内容</h4>
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center py-2 border-b border-[var(--border)]/30">
+                            <span className="text-[var(--muted-foreground)] font-medium">レッスン形式</span>
+                            <span className="text-[var(--foreground)] font-semibold">{lessonType === 'online' ? 'オンライン' : '対面'}</span>
+                          </div>
+                          <div className="flex justify-between items-center py-2 border-b border-[var(--border)]/30">
+                            <span className="text-[var(--muted-foreground)] font-medium">参加者数</span>
+                            <span className="text-[var(--foreground)] font-semibold">{participants}名</span>
+                          </div>
+                          <div className="flex justify-between items-center py-2">
+                            <span className="text-[var(--muted-foreground)] font-medium">予約日時</span>
+                            <span className="text-[var(--foreground)] font-semibold text-right">{selectedDate} {selectedTime}</span>
                           </div>
                         </div>
-                        {paymentMethod === "cash" && (
-                          <div className="mt-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg text-sm text-yellow-800 dark:text-yellow-200">
-                            <div className="flex items-start gap-2">
-                              <span>ℹ️</span>
-                              <div>
-                                <strong>現金お支払いについて:</strong><br/>
-                                レッスン開始前に現金でのお支払いをお願いいたします。
-                              </div>
-                            </div>
+                      </div>
+
+                      {/* Coupon Section */}
+                      <div>
+                        <label className="block text-[var(--foreground)] font-semibold mb-3">クーポンコード（任意）</label>
+                        <div className="flex gap-2 lg:gap-3">
+                          <input
+                            type="text"
+                            value={coupon}
+                            onChange={(e) => setCoupon(e.target.value)}
+                            placeholder="クーポンコードを入力"
+                            className="flex-1 px-3 lg:px-4 py-2 lg:py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
+                            disabled={isFreeTrialActive}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setCouponConfirmed(true)}
+                            disabled={!coupon || couponConfirmed || priceLoading || isFreeTrialActive}
+                            className="px-4 lg:px-6 py-2 lg:py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+                          >
+                            {couponConfirmed ? "適用済み" : "適用"}
+                          </button>
+                        </div>
+                        {isFreeTrialActive && (
+                          <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl text-sm text-green-800 dark:text-green-200 flex items-center gap-2">
+                            <span>🎉</span>
+                            <span><strong>無料体験レッスン</strong>が適用されています</span>
                           </div>
                         )}
                       </div>
-                    )}
+                    </div>
+
+                    {/* Right Column - Payment Method */}
+                    <div className="space-y-6">
+                      {/* Payment Method Selection - Only show if not free */}
+                      {finalPrice !== 0 && (
+                        <div>
+                          <label className="block text-[var(--foreground)] font-semibold mb-4 text-center lg:text-left">お支払い方法を選択</label>
+                          <div className="grid grid-cols-1 gap-4">
+                            <button
+                              type="button"
+                              onClick={() => setPaymentMethod("card")}
+                              className={`group relative p-4 lg:p-6 rounded-xl border-2 transition-all duration-300 ${
+                                paymentMethod === "card"
+                                  ? "border-[#3881ff] bg-blue-50 dark:bg-blue-900/20 shadow-md"
+                                  : "border-[var(--border)] bg-[var(--card)] hover:border-[#3881ff] hover:bg-[var(--muted)]/30"
+                              }`}
+                            >
+                              <div className="flex flex-col items-center gap-3">
+                                <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
+                                  paymentMethod === "card" 
+                                    ? "bg-[#3881ff] text-white" 
+                                    : "bg-[var(--muted)] text-[var(--muted-foreground)] group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30"
+                                }`}>
+                                  💳
+                                </div>
+                                <div className="text-center">
+                                  <div className={`font-semibold transition-colors duration-300 ${
+                                    paymentMethod === "card" 
+                                      ? "text-[#3881ff]" 
+                                      : "text-[var(--foreground)] group-hover:text-[#3881ff]"
+                                  }`}>
+                                    カード決済
+                                  </div>
+                                  <div className="text-xs lg:text-sm text-[var(--muted-foreground)] mt-1">
+                                    Visa, MasterCard, JCB
+                                  </div>
+                                </div>
+                              </div>
+                              {paymentMethod === "card" && (
+                                <div className="absolute -top-2 -right-2 w-5 h-5 lg:w-6 lg:h-6 bg-[#3881ff] rounded-full flex items-center justify-center">
+                                  <span className="text-white text-xs lg:text-sm">✓</span>
+                                </div>
+                              )}
+                            </button>
+                            
+                            <button
+                              type="button"
+                              onClick={() => setPaymentMethod("cash")}
+                              className={`group relative p-4 lg:p-6 rounded-xl border-2 transition-all duration-300 ${
+                                paymentMethod === "cash"
+                                  ? "border-green-500 bg-green-50 dark:bg-green-900/20 shadow-md"
+                                  : "border-[var(--border)] bg-[var(--card)] hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-900/10"
+                              }`}
+                            >
+                              <div className="flex flex-col items-center gap-3">
+                                <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
+                                  paymentMethod === "cash" 
+                                    ? "bg-green-500 text-white" 
+                                    : "bg-[var(--muted)] text-[var(--muted-foreground)] group-hover:bg-green-100 dark:group-hover:bg-green-900/30"
+                                }`}>
+                                  💰
+                                </div>
+                                <div className="text-center">
+                                  <div className={`font-semibold transition-colors duration-300 ${
+                                    paymentMethod === "cash" 
+                                      ? "text-green-600 dark:text-green-400" 
+                                      : "text-[var(--foreground)] group-hover:text-green-600 dark:group-hover:text-green-400"
+                                  }`}>
+                                    現金決済
+                                  </div>
+                                  <div className="text-xs lg:text-sm text-[var(--muted-foreground)] mt-1">
+                                    レッスン開始時にお支払い
+                                  </div>
+                                </div>
+                              </div>
+                              {paymentMethod === "cash" && (
+                                <div className="absolute -top-2 -right-2 w-5 h-5 lg:w-6 lg:h-6 bg-green-500 rounded-full flex items-center justify-center">
+                                  <span className="text-white text-xs lg:text-sm">✓</span>
+                                </div>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Error Display */}
+                      {formError && (
+                        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+                          <div className="flex items-center gap-2 text-red-800 dark:text-red-200">
+                            <span>⚠️</span>
+                            <span className="font-medium">{formError}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  {formError && <div className="text-red-400 text-center mb-3 text-sm">{formError}</div>}
-
-                  <div className="flex gap-3 mt-6">
+                  {/* Action Buttons - Full Width */}
+                  <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 mt-4 lg:mt-6 xl:mt-8">
                     <button
                       type="button"
-                      onClick={() => setSubstep(3)}
-                      className="btn-danger flex-1"
+                      onClick={() => setSubstep(2)}
+                      className="flex-1 px-4 lg:px-6 py-3 bg-[var(--muted)] hover:bg-[var(--muted)]/80 text-[var(--foreground)] font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md"
                     >
                       戻る
                     </button>
                     <button
                       type="submit"
                       disabled={formLoading}
-                      className="btn-primary flex-1"
+                      className="flex-1 px-4 lg:px-6 py-3 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] hover:from-[#2563eb] hover:to-[#3b82f6] text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
                     >
-                      {formLoading ? "処理中..." : 
-                       finalPrice === 0 ? "予約確定" : 
-                       paymentMethod === "cash" ? "現金予約確定" : "支払い"}
+                      {formLoading ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          <span>処理中...</span>
+                        </div>
+                      ) : finalPrice === 0 ? (
+                        "予約を確定する"
+                      ) : paymentMethod === "cash" ? (
+                        "現金予約を確定する"
+                      ) : (
+                        "お支払いに進む"
+                      )}
                     </button>
                   </div>
                 </form>
@@ -1170,7 +1217,7 @@ export default function BookLessonPage() {
           )}
           {step === 2 && clientSecret && (
             <div
-              className="bg-[var(--card)]/50 border border-[var(--border)] p-8 rounded-2xl shadow-xl w-full flex flex-col gap-6 max-w-lg mx-auto min-h-0 min-w-0 max-h-[90vh] overflow-y-auto justify-center hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300"
+              className="bg-[var(--card)] border border-[var(--border)] p-8 rounded-2xl shadow-lg w-full flex flex-col gap-6 max-w-lg mx-auto min-h-0 min-w-0 max-h-[90vh] overflow-y-auto justify-center hover:shadow-xl transition-all duration-300"
               id="payment-form-container"
               ref={paymentFormRef}
               style={{ marginTop: 'auto', marginBottom: 'auto' }}
@@ -1218,11 +1265,11 @@ export default function BookLessonPage() {
             </div>
           )}
           {step === 3 && (
-            <div className="bg-[var(--card)]/50 border border-[var(--border)] p-8 rounded-2xl shadow-xl w-full flex flex-col items-center gap-6 max-w-lg mx-auto min-h-0 min-w-0 max-h-[90vh] justify-center hover:shadow-xl hover:shadow-[#3881ff]/10 transition-all duration-300">
-              <svg className="w-16 h-16 text-green-400 mb-2" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+            <div className="bg-[var(--card)] border border-[var(--border)] p-8 rounded-2xl shadow-lg w-full flex flex-col items-center gap-6 max-w-lg mx-auto min-h-0 min-w-0 max-h-[90vh] justify-center hover:shadow-xl transition-all duration-300">
+              <svg className="w-16 h-16 text-green-500 mb-2" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
-              <div className="text-green-400 font-bold text-2xl mb-2">予約完了!</div>
+              <div className="text-green-600 dark:text-green-400 font-bold text-2xl mb-2">予約完了!</div>
               <div className="text-[var(--muted-foreground)] text-center">
                 ご予約ありがとうございます。<br />
                 予約確認メールが間もなく送信されます。

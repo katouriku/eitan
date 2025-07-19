@@ -148,8 +148,8 @@ const Calendar: React.FC<CalendarProps> = ({
                   ? 'text-[var(--muted-foreground)] cursor-not-allowed opacity-60'
                   : available && !fullyBooked
                   ? selected
-                    ? 'bg-[#3881ff] text-blue-500 font-bold shadow-lg ring-2 ring-[#3881ff]/50'
-                    : 'text-[var(--foreground)] bg-[var(--muted)] hover:bg-[#3881ff] hover:text-white border border-[var(--border)] hover:border-[#3881ff]'
+                    ? '  font-bold shadow-lg ring-2 ring-[#3881ff]/50'
+                    : 'text-[var(--foreground)] bg-[var(--muted)] hover:bg-[#3881ff] border border-[var(--border)] hover:border-[#3881ff]'
                   : fullyBooked && available
                   ? 'text-[var(--muted-foreground)] bg-[var(--muted)]/50 border border-[var(--border)] cursor-not-allowed line-through'
                   : 'text-[var(--muted-foreground)] cursor-not-allowed opacity-60'
