@@ -213,7 +213,7 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
             
             {/* Progress Bar for Book Lesson Page */}
             {pathname === '/book-lesson' && (
-              <div className="lg:fixed lg:top-16 left-0 right-0 z-30">
+              <div className="mt-16 lg:fixed left-0 right-0 z-30">
                 <div id="progress-bar-container" className="max-w-7xl mx-auto bg-transparent py-2">
                   {/* Progress bar will be rendered here by the booking page */}
                 </div>
@@ -247,9 +247,9 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
                 </section>
               ) : pathname === '/book-lesson' ? (
                 <section className="flex-1 relative overflow-y-auto min-h-0 pt-16 lg:pt-20">
-                  {/* Main content - centered horizontally and slightly above center vertically */}
-                  <div className="flex items-center justify-center min-h-full px-4 sm:px-6 py-6 sm:py-8 sm:pt-40">
-                    <div className="w-full max-w-4xl mx-auto" style={{ marginTop: '-5vh' }}>
+                  {/* Main content - mobile: starts right after progress bar, desktop: centered */}
+                  <div className="px-4 sm:px-6 py-4 lg:flex lg:items-center lg:justify-center lg:min-h-full lg:py-8 lg:pt-40">
+                    <div className="w-full max-w-4xl mx-auto -mt-20 lg:-mt-0">
                       {children}
                     </div>
                   </div>
