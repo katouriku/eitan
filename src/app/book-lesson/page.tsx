@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { loadStripe } from "@stripe/stripe-js/pure";
 import { Elements } from "@stripe/react-stripe-js";
 import { PaymentElement } from "@stripe/react-stripe-js";
@@ -379,6 +380,18 @@ export default function BookLessonPage() {
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
+  // Render progress bar in fixed container using portal
+  const [progressBarContainer, setProgressBarContainer] = useState<HTMLElement | null>(null);
+  const [sidebarContainer, setSidebarContainer] = useState<HTMLElement | null>(null);
+  
+  useEffect(() => {
+    const container = document.getElementById('progress-bar-container');
+    setProgressBarContainer(container);
+    
+    const sidebar = document.getElementById('booking-sidebar-container');
+    setSidebarContainer(sidebar);
+  }, []);
+
   // Helper: Map day string to JS weekday index
   const dayToIndex: Record<string, number> = {
     monday: 1,
@@ -731,6 +744,64 @@ export default function BookLessonPage() {
     );
   }
 
+  // Sidebar component - Always visible with placeholders
+  function BookingSidebar() {
+    return (
+      <div className="bg-[var(--card)] border border-[var(--border)] p-6 rounded-xl shadow-lg">
+        <h3 className="text-lg font-semibold text-[var(--foreground)] mb-4 text-center">予約詳細</h3>
+        
+        {/* Price display */}
+        <div className="space-y-4 mb-6">
+          <div className="text-center">
+            <div className="text-sm text-[var(--muted-foreground)] mb-1">合計金額(税込み)</div>
+            <div className="text-2xl font-bold text-[#3881ff]">
+              {lessonType ? getDisplayPrice() : "－"}
+            </div>
+          </div>
+          
+          {/* Participant count */}
+          <div className="flex justify-between items-center py-2 border-t border-[var(--border)]/30">
+            <span className="text-[var(--muted-foreground)] font-medium">参加者数</span>
+            <span className="text-[var(--foreground)] font-semibold">
+              {lessonType ? `${participants}名` : "－"}
+            </span>
+          </div>
+          
+          {/* Lesson type */}
+          <div className="flex justify-between items-center py-2 border-t border-[var(--border)]/30">
+            <span className="text-[var(--muted-foreground)] font-medium">レッスン形式</span>
+            <span className="text-[var(--foreground)] font-semibold">
+              {lessonType === 'online' ? 'オンライン' : lessonType === 'in-person' ? '対面' : '－'}
+            </span>
+          </div>
+          
+          {/* Date */}
+          <div className="flex justify-between items-center py-2 border-t border-[var(--border)]/30">
+            <span className="text-[var(--muted-foreground)] font-medium">予約日</span>
+            <span className="text-[var(--foreground)] font-semibold">
+              {selectedDate || "－"}
+            </span>
+          </div>
+          
+          {/* Time */}
+          <div className="flex justify-between items-center py-2 border-t border-[var(--border)]/30">
+            <span className="text-[var(--muted-foreground)] font-medium">予約時間</span>
+            <span className="text-[var(--foreground)] font-semibold">
+              {selectedTime || "－"}
+            </span>
+          </div>
+        </div>
+        
+        {/* Error display */}
+        {priceError && lessonType && (
+          <div className="text-red-400 text-sm font-bold text-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+            {priceError}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   // Move this after all hooks
   if (isLoading) {
     return <LoadingAnimation fullScreen={false} />;
@@ -738,12 +809,22 @@ export default function BookLessonPage() {
 
   return (
     <main className="flex flex-col flex-1 min-w-0 w-full">
+      {/* Render progress bar in fixed container using portal */}
+      {progressBarContainer && createPortal(
+        <ProgressBar step={step} substep={step === 1 ? substep : undefined} />,
+        progressBarContainer
+      )}
+      
+      {/* Always render sidebar in fixed container using portal - desktop only */}
+      {sidebarContainer && createPortal(
+        <BookingSidebar />,
+        sidebarContainer
+      )}
+      
       <section className="flex flex-col items-center justify-center w-full px-4">
-        <div className="flex flex-col items-center justify-center max-w-7xl min-w-[340px] w-full order-2 md:order-none min-h-0">
-          <ProgressBar step={step} substep={step === 1 ? substep : undefined} />
-          
-          {/* Price display - always reserve space to prevent layout shifts */}
-          <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 mb-4 min-h-[2rem]">
+        <div className="flex flex-col items-center justify-center max-w-4xl min-w-[340px] w-full">
+          {/* Price display - mobile only, hidden on desktop */}
+          <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 mb-4 min-h-[2rem] xl:hidden">
             {lessonType && (
               <>
                 <div className="text-base sm:text-lg font-bold text-[var(--muted-foreground)] flex flex-row items-center gap-2">
@@ -756,7 +837,7 @@ export default function BookLessonPage() {
             )}
           </div>
           {lessonType && priceError && (
-            <div className="text-red-400 text-sm font-bold text-center mb-4">{priceError}</div>
+            <div className="text-red-400 text-sm font-bold text-center mb-4 xl:hidden">{priceError}</div>
           )}
           {/* If lessonType is set from query, skip selection and go to step 1 form */}
           {step === 1 && lessonType === "" && (
@@ -1020,7 +1101,7 @@ export default function BookLessonPage() {
 
               {/* Stage 3: Price and Payment */}
               {substep === 3 && (
-                <form onSubmit={handleSubmit} className="bg-[var(--card)] border border-[var(--border)] p-4 lg:p-6 xl:p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 w-full max-w-2xl lg:max-w-6xl mx-auto">
+                <form onSubmit={handleSubmit} className="bg-[var(--card)] border border-[var(--border)] p-6 lg:p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 w-full max-w-6xl mx-auto">
                   <input type="hidden" name="lessonType" value={lessonType} />
                   <input type="hidden" name="name" value={customerName} />
                   <input type="hidden" name="kana" value={customerKana} />
@@ -1028,13 +1109,13 @@ export default function BookLessonPage() {
                   <input type="hidden" name="participants" value={participants} />
                   
                   {/* Header */}
-                  <div className="text-center mb-4 lg:mb-6 xl:mb-8">
-                    <h3 className="text-xl lg:text-2xl xl:text-3xl text-[var(--foreground)] font-bold mb-3">料金確認・お支払い</h3>
-                    <div className="w-24 lg:w-32 xl:w-40 h-1 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] mx-auto rounded-full"></div>
+                  <div className="text-center mb-6 lg:mb-8">
+                    <h3 className="text-2xl lg:text-3xl text-[var(--foreground)] font-bold mb-3">料金確認・お支払い</h3>
+                    <div className="w-32 lg:w-40 h-1 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] mx-auto rounded-full"></div>
                   </div>
                   
-                  {/* Responsive Layout */}
-                  <div className="flex flex-col lg:grid lg:grid-cols-2 gap-4 lg:gap-6 xl:gap-8">
+                  {/* Desktop Grid Layout */}
+                  <div className="grid lg:grid-cols-2 gap-6 lg:gap-8">
                     
                     {/* Left Column - Summary & Coupon */}
                     <div className="space-y-6">
@@ -1060,20 +1141,20 @@ export default function BookLessonPage() {
                       {/* Coupon Section */}
                       <div>
                         <label className="block text-[var(--foreground)] font-semibold mb-3">クーポンコード（任意）</label>
-                        <div className="flex gap-2 lg:gap-3">
+                        <div className="flex gap-3">
                           <input
                             type="text"
                             value={coupon}
                             onChange={(e) => setCoupon(e.target.value)}
                             placeholder="クーポンコードを入力"
-                            className="flex-1 px-3 lg:px-4 py-2 lg:py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
+                            className="flex-1 px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
                             disabled={isFreeTrialActive}
                           />
                           <button
                             type="button"
                             onClick={() => setCouponConfirmed(true)}
                             disabled={!coupon || couponConfirmed || priceLoading || isFreeTrialActive}
-                            className="px-4 lg:px-6 py-2 lg:py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+                            className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
                           >
                             {couponConfirmed ? "適用済み" : "適用"}
                           </button>
@@ -1093,7 +1174,7 @@ export default function BookLessonPage() {
                       {finalPrice !== 0 && (
                         <div>
                           <label className="block text-[var(--foreground)] font-semibold mb-4 text-center lg:text-left">お支払い方法を選択</label>
-                          <div className="grid grid-cols-1 gap-4">
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <button
                               type="button"
                               onClick={() => setPaymentMethod("card")}
@@ -1157,7 +1238,7 @@ export default function BookLessonPage() {
                                     現金決済
                                   </div>
                                   <div className="text-xs lg:text-sm text-[var(--muted-foreground)] mt-1">
-                                    レッスン開始時にお支払い
+                                    レッスン開始時
                                   </div>
                                 </div>
                               </div>
@@ -1167,6 +1248,21 @@ export default function BookLessonPage() {
                                 </div>
                               )}
                             </button>
+                          </div>
+                          
+                          {/* Payment Information - Always visible to prevent layout shift */}
+                          <div className="mt-4 p-4 bg-[var(--muted)]/30 border border-[var(--border)] rounded-xl">
+                            <div className="flex items-start gap-3">
+                              <div className="w-8 h-8 bg-[var(--muted)] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <span className="text-[var(--foreground)]">ℹ️</span>
+                              </div>
+                              <div>
+                                    <div className="font-semibold text-[var(--foreground)] mb-1">現金お支払いについて</div>
+                                    <div className="text-sm text-[var(--muted-foreground)]">
+                                      レッスン開始前に現金でのお支払いをお願いいたします。お釣りのないようご準備ください。
+                                    </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -1184,18 +1280,18 @@ export default function BookLessonPage() {
                   </div>
 
                   {/* Action Buttons - Full Width */}
-                  <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 mt-4 lg:mt-6 xl:mt-8">
+                  <div className="flex flex-col sm:flex-row gap-4 mt-6 lg:mt-8">
                     <button
                       type="button"
                       onClick={() => setSubstep(2)}
-                      className="flex-1 px-4 lg:px-6 py-3 bg-[var(--muted)] hover:bg-[var(--muted)]/80 text-[var(--foreground)] font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md"
+                      className="flex-1 px-6 py-3 bg-[var(--muted)] hover:bg-[var(--muted)]/80 text-[var(--foreground)] font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md"
                     >
                       戻る
                     </button>
                     <button
                       type="submit"
                       disabled={formLoading}
-                      className="flex-1 px-4 lg:px-6 py-3 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] hover:from-[#2563eb] hover:to-[#3b82f6] text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+                      className="flex-1 px-6 py-3 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] hover:from-[#2563eb] hover:to-[#3b82f6] text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
                     >
                       {formLoading ? (
                         <div className="flex items-center justify-center gap-2">

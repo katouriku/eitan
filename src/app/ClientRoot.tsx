@@ -211,6 +211,15 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
               </div>
             )}
             
+            {/* Progress Bar for Book Lesson Page */}
+            {pathname === '/book-lesson' && (
+              <div className="lg:fixed lg:top-16 left-0 right-0 z-30">
+                <div id="progress-bar-container" className="max-w-7xl mx-auto bg-transparent py-2">
+                  {/* Progress bar will be rendered here by the booking page */}
+                </div>
+              </div>
+            )}
+            
             <main className={`flex-1 flex flex-col min-h-0 ${pathname === '/book-lesson' ? 'pt-8 md:pt-0' : 'pt-0'}`}>
               {pathname === "/" ? (
                 <section className="flex-1 relative min-h-0">
@@ -237,9 +246,17 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
                   </div>
                 </section>
               ) : pathname === '/book-lesson' ? (
-                <section className="flex-1 px-4 sm:px-6 py-6 sm:py-8 overflow-y-auto min-h-0 pt-8 sm:pt-12 flex items-center justify-center">
-                  <div className="max-w-4xl mx-auto w-full">
-                    {children}
+                <section className="flex-1 relative overflow-y-auto min-h-0 pt-16 lg:pt-20">
+                  {/* Main content - centered horizontally and slightly above center vertically */}
+                  <div className="flex items-center justify-center min-h-full px-4 sm:px-6 py-6 sm:py-8 sm:pt-40">
+                    <div className="w-full max-w-4xl mx-auto" style={{ marginTop: '-5vh' }}>
+                      {children}
+                    </div>
+                  </div>
+                  
+                  {/* Fixed sidebar on far right - desktop only, always visible */}
+                  <div id="booking-sidebar-container" className="hidden lg:block fixed top-1/2 right-6 transform -translate-y-1/2 z-20 w-72">
+                    {/* Sidebar content will be rendered here by the booking page */}
                   </div>
                 </section>
               ) : (

@@ -63,7 +63,7 @@ export default function ContactPage() {
         </div>
         <button
           onClick={() => setSuccess(false)}
-          className="btn-primary mt-4"
+          className="px-6 py-3 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] hover:from-[#2563eb] hover:to-[#3b82f6] text-white font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md mt-4"
         >
           新しいメッセージを送る
         </button>
@@ -95,8 +95,13 @@ export default function ContactPage() {
               value={formData.name}
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border-2 border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all"
+              className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
               placeholder="山田太郎"
+              style={{
+                WebkitBoxShadow: '0 0 0 1000px var(--input) inset',
+                WebkitTextFillColor: 'var(--foreground)',
+                backgroundColor: 'var(--input) !important'
+              }}
             />
           </div>
 
@@ -111,8 +116,13 @@ export default function ContactPage() {
               value={formData.email}
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border-2 border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all"
+              className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
               placeholder="your@email.com"
+              style={{
+                WebkitBoxShadow: '0 0 0 1000px var(--input) inset',
+                WebkitTextFillColor: 'var(--foreground)',
+                backgroundColor: 'var(--input) !important'
+              }}
             />
           </div>
         </div>
@@ -128,8 +138,13 @@ export default function ContactPage() {
             value={formData.subject}
             onChange={handleChange}
             required
-            className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border-2 border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all"
+            className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
             placeholder="お問い合わせの件名"
+            style={{
+              WebkitBoxShadow: '0 0 0 1000px var(--input) inset',
+              WebkitTextFillColor: 'var(--foreground)',
+              backgroundColor: 'var(--input) !important'
+            }}
           />
         </div>
 
@@ -144,8 +159,13 @@ export default function ContactPage() {
             onChange={handleChange}
             required
             rows={6}
-            className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border-2 border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all resize-vertical"
+            className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300 resize-vertical"
             placeholder="お問い合わせ内容をご記入ください..."
+            style={{
+              WebkitBoxShadow: '0 0 0 1000px var(--input) inset',
+              WebkitTextFillColor: 'var(--foreground)',
+              backgroundColor: 'var(--input) !important'
+            }}
           />
         </div>
 
@@ -158,7 +178,7 @@ export default function ContactPage() {
         <button
           type="submit"
           disabled={loading}
-          className="btn-primary w-full px-8 py-4 text-lg"
+          className="w-full px-8 py-4 text-lg bg-gradient-to-r from-[#3881ff] to-[#5a9eff] hover:from-[#2563eb] hover:to-[#3b82f6] text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
         >
           {loading ? "送信中..." : "メッセージを送信"}
         </button>
