@@ -868,7 +868,7 @@ export default function BookLessonPage() {
                       💻
                     </div>
                     <div className="text-xl font-bold text-[var(--foreground)] mb-2">オンラインレッスン</div>
-                    <div className="text-sm text-[var(--muted-foreground)] mb-4">Discord, Zoomなど</div>
+                    <div className="text-sm text-[var(--muted-foreground)] mb-4">Discord</div>
                     <div className="text-[#3881ff] font-bold text-lg">
                       {isFreeTrialActive ? (
                         <div className="flex items-center justify-center gap-2">
