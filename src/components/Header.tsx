@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from './AuthModal';
+import UserProfilePicture from './UserProfilePicture';
 
 interface HeaderProps {
   homepage: {
@@ -54,8 +55,8 @@ export default function Header({ homepage, nav, menuOpen, setMenuOpen }: HeaderP
             </h1>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-2 xl:gap-3">
+          {/* Desktop Navigation - Center */}
+          <nav className="hidden lg:flex items-center gap-2 xl:gap-3 absolute left-1/2 transform -translate-x-1/2">
             {nav.map((item) => (
               <Link
                 key={item.href}
@@ -65,20 +66,12 @@ export default function Header({ homepage, nav, menuOpen, setMenuOpen }: HeaderP
                 {item.label}
               </Link>
             ))}
+          </nav>
             
-            {/* Auth Button */}
+          {/* Auth Section - Right */}
+          <div className="hidden lg:flex items-center gap-3">
             {user ? (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-[var(--muted-foreground)] hidden xl:inline">
-                  {user.email}
-                </span>
-                <button
-                  onClick={handleSignOut}
-                  className="px-4 py-2.5 rounded-xl font-medium text-sm bg-red-500/10 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-all duration-300"
-                >
-                  ログアウト
-                </button>
-              </div>
+              <UserProfilePicture showDropdown={true} />
             ) : (
               <button
                 onClick={() => setAuthModalOpen(true)}
@@ -87,7 +80,7 @@ export default function Header({ homepage, nav, menuOpen, setMenuOpen }: HeaderP
                 ログイン
               </button>
             )}
-          </nav>
+          </div>
 
           {/* Mobile Menu Button */}
           <button
@@ -128,12 +121,20 @@ export default function Header({ homepage, nav, menuOpen, setMenuOpen }: HeaderP
                 </Link>
               ))}
               
-              {/* Mobile Auth Button */}
+              {/* Mobile Auth Section */}
               {user ? (
                 <div className="mt-4 space-y-3">
-                  <div className="px-4 py-3 text-sm text-[var(--muted-foreground)] border border-[var(--border)] rounded-xl">
-                    {user.email}
-                  </div>
+                  <Link
+                    href="/profile"
+                    className="flex items-center gap-3 px-4 py-3 text-[var(--foreground)] bg-[var(--muted)]/50 border border-[var(--border)] rounded-xl hover:bg-[var(--muted)] transition-all duration-300"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <UserProfilePicture size="sm" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate">{user.user_metadata?.full_name || 'ユーザー'}</p>
+                      <p className="text-xs text-[var(--muted-foreground)] truncate">{user.email}</p>
+                    </div>
+                  </Link>
                   <button
                     onClick={() => {
                       handleSignOut();

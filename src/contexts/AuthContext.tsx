@@ -2,16 +2,16 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string) => Promise<{ error: AuthError | null }>;
+  signUp: (email: string, password: string, metadata?: { full_name?: string; preferred_location?: string }) => Promise<{ error: AuthError | null; message?: string }>;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-  signInWithGoogle: () => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<{ error: AuthError | null }>;
+  resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,6 +28,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  const supabase = createClientComponentClient();
 
   useEffect(() => {
     // Get initial session
@@ -50,20 +52,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [supabase]);
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, metadata?: { full_name?: string; preferred_location?: string }) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { error, data } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: metadata
         }
       });
-      return { error };
+      
+      if (error) {
+        return { error };
+      }
+      
+      // Check if user needs email confirmation
+      if (data.user && !data.session) {
+        return { 
+          error: null, 
+          message: 'Please check your email and click the confirmation link to verify your account.' 
+        };
+      }
+      
+      return { error: null };
     } catch (error) {
-      return { error };
+      return { error: error as AuthError };
     }
   };
 
@@ -75,21 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       return { error };
     } catch (error) {
-      return { error };
-    }
-  };
-
-  const signInWithGoogle = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`
-        }
-      });
-      return { error };
-    } catch (error) {
-      return { error };
+      return { error: error as AuthError };
     }
   };
 
@@ -98,7 +100,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.auth.signOut();
       return { error };
     } catch (error) {
+      return { error: error as AuthError };
+    }
+  };
+
+  const resetPassword = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password?from=email`
+      });
       return { error };
+    } catch (error) {
+      return { error: error as AuthError };
     }
   };
 
@@ -108,8 +121,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     signUp,
     signIn,
-    signInWithGoogle,
-    signOut
+    signOut,
+    resetPassword
   };
 
   return (
