@@ -8,7 +8,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, metadata?: { full_name?: string; preferred_location?: string }) => Promise<{ error: AuthError | null; message?: string }>;
+  signUp: (email: string, password: string, metadata?: { full_name?: string; full_name_kana?: string; preferred_location?: string }) => Promise<{ error: AuthError | null; message?: string }>;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<{ error: AuthError | null }>;
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, [supabase]);
 
-  const signUp = async (email: string, password: string, metadata?: { full_name?: string; preferred_location?: string }) => {
+  const signUp = async (email: string, password: string, metadata?: { full_name?: string; full_name_kana?: string; preferred_location?: string }) => {
     try {
       const { error, data } = await supabase.auth.signUp({
         email,

@@ -26,6 +26,13 @@ export interface Booking {
   regular_price: number
   discount_amount?: number
   final_price: number
+  // Student information
+  is_student_booker?: boolean
+  student_name?: string
+  student_age?: string
+  student_grade?: string
+  student_english_level?: string
+  student_notes?: string
   created_at: string
   updated_at: string
 }
@@ -131,6 +138,21 @@ export class BookingService {
     
     if (error) {
       console.error('Error fetching bookings:', error)
+      throw error
+    }
+    
+    return data
+  }
+  
+  static async getBookingsByEmail(email: string) {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('*')
+      .eq('email', email)
+      .order('date', { ascending: false })
+    
+    if (error) {
+      console.error('Error fetching bookings by email:', error)
       throw error
     }
     

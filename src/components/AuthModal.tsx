@@ -15,6 +15,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [fullNameKana, setFullNameKana] = useState('');
   const [preferredLocation, setPreferredLocation] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -167,6 +168,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       if (isSignUp) {
         const { error } = await signUp(email, password, {
           full_name: fullName,
+          full_name_kana: fullNameKana,
           preferred_location: preferredLocation
         });
         if (error) {
@@ -253,6 +255,20 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   required
                   className="w-full px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
                   placeholder="山田 太郎"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="fullNameKana" className="block text-sm font-medium text-[var(--foreground)] mb-2">
+                  氏名（ひらがな）
+                </label>
+                <input
+                  id="fullNameKana"
+                  type="text"
+                  value={fullNameKana}
+                  onChange={(e) => setFullNameKana(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
+                  placeholder="やまだ たろう"
                 />
               </div>
 

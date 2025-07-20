@@ -5,13 +5,13 @@ import { createPortal } from "react-dom";
 import { loadStripe } from "@stripe/stripe-js/pure";
 import { Elements } from "@stripe/react-stripe-js";
 import { PaymentElement } from "@stripe/react-stripe-js";
-import Cookies from "js-cookie";
 import "../globals.css";
 import { useStripe, useElements } from "@stripe/react-stripe-js";
 import { useQueryParam } from "./useQueryParam";
 import Calendar from "../../components/Calendar";
 import LoadingAnimation from "../../components/LoadingAnimation";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useAuth } from "../../contexts/AuthContext";
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 // Types for new schema
@@ -91,6 +91,8 @@ function StripePaymentForm({ onSuccess, onError, onBack }: { clientSecret: strin
 
 export default function BookLessonPage() {
   const { resolvedTheme } = useTheme();
+  const { user, signIn } = useAuth();
+  const [hasExistingBooking, setHasExistingBooking] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -107,9 +109,17 @@ export default function BookLessonPage() {
   const [customerName, setCustomerName] = useState("");
   const [customerKana, setCustomerKana] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
+  
+  // Student info
+  const [isStudentBooker, setIsStudentBooker] = useState(true); // Default to booker is student
+  const [studentName, setStudentName] = useState("");
+  const [studentAge, setStudentAge] = useState("");
+  const [studentGrade, setStudentGrade] = useState("");
+  const [studentEnglishLevel, setStudentEnglishLevel] = useState("");
+  const [studentNotes, setStudentNotes] = useState("");
+  
   const paymentFormRef = useRef<HTMLDivElement>(null);
   const lessonTypeParam = useQueryParam("lessonType");
-  const freeTrialParam = useQueryParam("freeTrial");
 
   // Coupon state
   const [coupon, setCoupon] = useState("");
@@ -119,19 +129,74 @@ export default function BookLessonPage() {
   const [couponConfirmed, setCouponConfirmed] = useState(false);
   const [isFreeTrialActive, setIsFreeTrialActive] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"card" | "cash">("card");
+  
+  // Saved payment methods for returning customers
+  const [savedPaymentMethods, setSavedPaymentMethods] = useState<Array<{
+    id: string;
+    card: {
+      brand: string;
+      last4: string;
+      exp_month: number;
+      exp_year: number;
+    };
+  }>>([]);
+  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<string | null>(null);
+  const [showSavePaymentMethod, setShowSavePaymentMethod] = useState(false);
+  const [password, setPassword] = useState("");
 
-  // Check if free trial is active from URL parameter
+  // Check for existing bookings to determine if free trial should be offered
   useEffect(() => {
-    if (freeTrialParam === "true") {
-      setCoupon("freelesson");
-      setCouponConfirmed(true);
-      setIsFreeTrialActive(true);
-      // Auto-update price when free trial is activated
-      if (lessonType && participants) {
-        updatePrice(lessonType, participants, "freelesson");
+    const checkExistingBookings = async () => {
+      if (!user?.email) return;
+      
+      try {
+        const response = await fetch(`/api/booking?customer_email=${encodeURIComponent(user.email)}`);
+        const data = await response.json();
+        
+        if (response.ok && data.bookings && data.bookings.length > 0) {
+          setHasExistingBooking(true);
+        } else {
+          setHasExistingBooking(false);
+          // If no existing bookings, offer free trial
+          setCoupon("freelesson");
+          setCouponConfirmed(true);
+          setIsFreeTrialActive(true);
+        }
+      } catch (error) {
+        console.error('Error checking existing bookings:', error);
+        setHasExistingBooking(false);
       }
+    };
+
+    checkExistingBookings();
+  }, [user?.email]);
+
+  // Load saved payment methods for authenticated users
+  useEffect(() => {
+    const loadSavedPaymentMethods = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const response = await fetch(`/api/payment-methods?userId=${user.id}`);
+        const data = await response.json();
+        
+        if (response.ok && data.paymentMethods) {
+          setSavedPaymentMethods(data.paymentMethods);
+        }
+      } catch (error) {
+        console.error('Error loading saved payment methods:', error);
+      }
+    };
+
+    loadSavedPaymentMethods();
+  }, [user?.id]);
+
+  // Auto-update price when free trial is activated or lesson details change
+  useEffect(() => {
+    if (isFreeTrialActive && lessonType && participants) {
+      updatePrice(lessonType, participants, "freelesson");
     }
-  }, [freeTrialParam, lessonType, participants]);
+  }, [isFreeTrialActive, lessonType, participants]);
 
   // Only update price when coupon is confirmed
   async function updatePrice(lessonType: string, participants: number, coupon: string) {
@@ -248,99 +313,24 @@ export default function BookLessonPage() {
     refreshBookedSlots();
   }, [refreshBookedSlots]);
 
-  // Try to load from cookies on mount and restore state
+  // Auto-load user info when user is authenticated
   useEffect(() => {
-    const savedName = Cookies.get("booking_name") || "";
-    const savedKana = Cookies.get("booking_kana") || "";
-    const savedEmail = Cookies.get("booking_email") || "";
-    const savedDate = Cookies.get("booking_date") || "";
-    const savedTime = Cookies.get("booking_time") || "";
-    const savedParticipants = Cookies.get("booking_participants");
-    const savedLessonType = Cookies.get("booking_lessonType") as "online" | "in-person" | "";
-    const savedClientSecret = Cookies.get("booking_clientSecret") || "";
-    const savedStep = Cookies.get("booking_step");
-    
-    // Restore form data
-    if (savedName) setCustomerName(savedName);
-    if (savedKana) setCustomerKana(savedKana);
-    if (savedEmail) setCustomerEmail(savedEmail);
-    if (savedDate) setSelectedDate(savedDate);
-    if (savedTime) setSelectedTime(savedTime);
-    if (savedParticipants) setParticipants(parseInt(savedParticipants));
-    if (savedLessonType) setLessonType(savedLessonType);
-    
-    // Restore payment session if exists
-    if (savedClientSecret && savedStep === "2") {
-      setClientSecret(savedClientSecret);
-      setStep(2);
-      return; // Skip normal progress restoration when in payment mode
+    if (user?.email) {
+      setCustomerEmail(user.email);
+      setCustomerName(user.user_metadata?.full_name || '');
+      setCustomerKana(user.user_metadata?.full_name_kana || '');
     }
-    
-    // Restore progress - advance to appropriate substep if data exists
-    if (savedLessonType && !lessonTypeParam) {
-      if (savedName && savedKana && savedEmail && savedDate && savedTime) {
-        setSubstep(3); // Go to payment step if all info is filled
-      } else if (savedName && savedKana && savedEmail) {
-        setSubstep(2); // Go to date/time step if contact info is filled
-      } else {
-        setSubstep(1); // Start with participants + contact info
+  }, [user]);
+
+  // Auto-progress if user data exists and lessonType is set
+  useEffect(() => {
+    if (user && lessonType && !lessonTypeParam) {
+      if (customerName && customerEmail) {
+        // User is authenticated and has required info, skip to date/time selection
+        setSubstep(2);
       }
     }
-  }, [lessonTypeParam]);
-
-  // Save form data to cookies when it changes
-  useEffect(() => {
-    if (customerName) Cookies.set("booking_name", customerName, { expires: 30 });
-  }, [customerName]);
-  
-  useEffect(() => {
-    if (customerKana) Cookies.set("booking_kana", customerKana, { expires: 30 });
-  }, [customerKana]);
-  
-  useEffect(() => {
-    if (customerEmail) Cookies.set("booking_email", customerEmail, { expires: 30 });
-  }, [customerEmail]);
-  
-  useEffect(() => {
-    if (selectedDate) Cookies.set("booking_date", selectedDate, { expires: 30 });
-  }, [selectedDate]);
-  
-  useEffect(() => {
-    if (selectedTime) Cookies.set("booking_time", selectedTime, { expires: 30 });
-  }, [selectedTime]);
-  
-  useEffect(() => {
-    if (participants) Cookies.set("booking_participants", participants.toString(), { expires: 30 });
-  }, [participants]);
-  
-  // Save client secret and step for payment session persistence
-  useEffect(() => {
-    if (clientSecret) {
-      Cookies.set("booking_clientSecret", clientSecret, { expires: 1 }); // Short expiry for security
-    }
-  }, [clientSecret]);
-  
-  useEffect(() => {
-    Cookies.set("booking_step", step.toString(), { expires: 1 });
-  }, [step]);
-  
-  // Clear all booking cookies after booking confirmation
-  useEffect(() => {
-    if (step === 3) {
-      Cookies.remove("booking_name");
-      Cookies.remove("booking_kana");
-      Cookies.remove("booking_email");
-      Cookies.remove("booking_date");
-      Cookies.remove("booking_time");
-      Cookies.remove("booking_participants");
-      Cookies.remove("booking_lessonType");
-      Cookies.remove("booking_clientSecret");
-      Cookies.remove("booking_step");
-      
-      // Mark that user has booked a lesson
-      Cookies.set("user_has_booked", "true", { expires: 365 }); // Remember for 1 year
-    }
-  }, [step]);
+  }, [user, lessonType, customerName, customerEmail, lessonTypeParam]);
 
   // If lessonType is provided in the query, set it and skip selection
   useEffect(() => {
@@ -535,6 +525,13 @@ export default function BookLessonPage() {
           discountAmount,
           finalPrice: computedFinalPrice,
           paymentMethod: computedFinalPrice === 0 ? 'free' : paymentMethod,
+          // Student information
+          isStudentBooker,
+          studentName: isStudentBooker ? name : studentName,
+          studentAge,
+          studentGrade,
+          studentEnglishLevel,
+          studentNotes,
         }),
       });
       const bookingData = await bookingRes.json();
@@ -596,7 +593,14 @@ export default function BookLessonPage() {
       const res = await fetch("/api/create-payment-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lessonType, participants, currency: "jpy", coupon: couponConfirmed ? coupon : undefined }),
+        body: JSON.stringify({ 
+          lessonType, 
+          participants, 
+          currency: "jpy", 
+          coupon: couponConfirmed ? coupon : undefined,
+          userId: user?.id,
+          paymentMethodId: selectedPaymentMethodId,
+        }),
       });
       const data = await res.json();
       if (data.free) {
@@ -836,7 +840,9 @@ export default function BookLessonPage() {
               <div className="grid md:grid-cols-2 gap-6">
                 <button
                   className="group relative p-6 rounded-xl border-2 border-[var(--border)] bg-[var(--card)] hover:border-[#3881ff] hover:bg-[var(--muted)]/30 transition-all duration-300 shadow-sm hover:shadow-md"
-                  onClick={() => setLessonType("online")}
+                  onClick={() => {
+                    setLessonType("online");
+                  }}
                 >
                   <div className="text-center">
                     <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-2xl shadow-md group-hover:scale-105 transition-transform duration-300">
@@ -858,7 +864,9 @@ export default function BookLessonPage() {
                 </button>
                 <button
                   className="group relative p-6 rounded-xl border-2 border-[var(--border)] bg-[var(--card)] hover:border-[#3881ff] hover:bg-[var(--muted)]/30 transition-all duration-300 shadow-sm hover:shadow-md"
-                  onClick={() => setLessonType("in-person")}
+                  onClick={() => {
+                    setLessonType("in-person");
+                  }}
                 >
                   <div className="text-center">
                     <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-2xl shadow-md group-hover:scale-105 transition-transform duration-300">
@@ -886,12 +894,303 @@ export default function BookLessonPage() {
           )}
           {step === 1 && lessonType !== "" && (
             <div className="space-y-6 w-full max-w-6xl mx-auto">
-              {/* Combined Stage 1: Participants and Contact Info */}
-              {substep === 1 && (
-                <div className="bg-[var(--card)] border border-[var(--border)] p-8 rounded-xl shadow-lg max-w-2xl mx-auto hover:shadow-xl transition-all duration-300">
+              {/* Stage 1: Account Setup (if not authenticated) or Participants Selection */}
+              {substep === 1 && !user && (
+                <div className="bg-[var(--card)] border border-[var(--border)] p-8 rounded-xl shadow-lg max-w-3xl mx-auto hover:shadow-xl transition-all duration-300">
+                  <div className="text-center mb-8">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-[#3881ff] to-[#5a9eff] rounded-full mb-4 shadow-md">
+                      <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <h4 className="text-2xl text-[var(--foreground)] font-bold mb-2">お客様情報の入力</h4>
+                    <p className="text-[var(--muted-foreground)]">
+                      予約のためにアカウントを作成いたします
+                    </p>
+                  </div>
+
+                  {/* Account Creation Form */}
+                  <div className="space-y-6">
+                    {/* Participants Section */}
+                    <div>
+                      <h5 className="text-lg text-[var(--foreground)] font-semibold text-center mb-4">参加者数を選択</h5>
+                      <div className="flex items-center justify-center gap-4">
+                        <button
+                          type="button"
+                          className="w-12 h-12 rounded-xl bg-[var(--muted)] hover:bg-[var(--muted)]/80 text-[#3881ff] font-bold text-xl border-2 border-[var(--border)] hover:border-[#3881ff] transition-all duration-300 disabled:opacity-50 shadow-sm hover:shadow-md flex items-center justify-center"
+                          onClick={() => setParticipants(Math.max(1, participants - 1))}
+                          disabled={participants <= 1}
+                        >-</button>
+                        <div className="text-center px-6">
+                          <div className="text-3xl font-bold text-[var(--foreground)]">{participants}</div>
+                          <div className="text-[var(--muted-foreground)] text-sm">名</div>
+                        </div>
+                        <button
+                          type="button"
+                          className="w-12 h-12 rounded-xl bg-[var(--muted)] hover:bg-[#3881ff] text-[#3881ff] hover:text-white font-bold text-xl border-2 border-[var(--border)] hover:border-[#3881ff] transition-all duration-300 disabled:opacity-50 shadow-sm hover:shadow-md flex items-center justify-center"
+                          onClick={() => {
+                            if (participants < 5) {
+                              setParticipants(participants + 1);
+                            } else {
+                              setShowParticipantWarning(true);
+                            }
+                          }}
+                          disabled={participants >= 5}
+                        >+</button>
+                      </div>
+                      {showParticipantWarning && (
+                        <div className="text-amber-600 dark:text-amber-400 text-sm text-center mt-4 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-200 dark:border-amber-800">
+                          参加者は最大5名までです。
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Account Information */}
+                    <div>
+                      <h5 className="text-lg text-[var(--foreground)] font-semibold mb-4">アカウント情報</h5>
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[var(--foreground)] font-medium mb-2">お名前（漢字） <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            value={customerName}
+                            onChange={(e) => setCustomerName(e.target.value)}
+                            placeholder="例: 山田 太郎"
+                            className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[var(--foreground)] font-medium mb-2">お名前（カナ）</label>
+                          <input
+                            type="text"
+                            value={customerKana}
+                            onChange={(e) => setCustomerKana(e.target.value)}
+                            placeholder="例: ヤマダ タロウ"
+                            className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-4">
+                        <label className="block text-[var(--foreground)] font-medium mb-2">メールアドレス <span className="text-red-500">*</span></label>
+                        <input
+                          type="email"
+                          value={customerEmail}
+                          onChange={(e) => setCustomerEmail(e.target.value)}
+                          placeholder="例: name@gmail.com"
+                          className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
+                          required
+                        />
+                      </div>
+                      <div className="mt-4">
+                        <label className="block text-[var(--foreground)] font-medium mb-2">パスワード <span className="text-red-500">*</span></label>
+                        <input
+                          type="password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="6文字以上"
+                          minLength={6}
+                          className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Student Info Section */}
+                    <div>
+                      <h5 className="text-lg text-[var(--foreground)] font-semibold mb-4">生徒情報</h5>
+                      
+                      {/* Student is booker toggle */}
+                      <div className="mb-6">
+                        <div className="flex items-center justify-center gap-4">
+                          <label className="flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={isStudentBooker}
+                              onChange={(e) => {
+                                setIsStudentBooker(e.target.checked);
+                                if (e.target.checked) {
+                                  setStudentName(customerName);
+                                  setStudentAge("");
+                                  setStudentGrade("");
+                                  setStudentEnglishLevel("");
+                                  setStudentNotes("");
+                                }
+                              }}
+                              className="sr-only"
+                            />
+                            <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isStudentBooker ? 'bg-[#3881ff]' : 'bg-gray-300'}`}>
+                              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isStudentBooker ? 'translate-x-6' : 'translate-x-1'}`} />
+                            </div>
+                            <span className="ml-3 text-[var(--foreground)] font-medium">予約者本人がレッスンを受ける</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {!isStudentBooker && (
+                        <div className="space-y-4">
+                          <div className="grid sm:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-[var(--foreground)] font-medium mb-2">生徒のお名前</label>
+                              <input
+                                type="text"
+                                value={studentName}
+                                onChange={(e) => setStudentName(e.target.value)}
+                                placeholder="例: 山田 花子"
+                                className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
+                                required={!isStudentBooker}
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[var(--foreground)] font-medium mb-2">年齢</label>
+                              <input
+                                type="number"
+                                min="1"
+                                max="18"
+                                value={studentAge}
+                                onChange={(e) => setStudentAge(e.target.value)}
+                                placeholder="例: 12"
+                                className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid sm:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-[var(--foreground)] font-medium mb-2">学年</label>
+                              <select
+                                value={studentGrade}
+                                onChange={(e) => setStudentGrade(e.target.value)}
+                                className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
+                              >
+                                <option value="">選択してください</option>
+                                <option value="未就学児">未就学児</option>
+                                <option value="小学1年">小学1年</option>
+                                <option value="小学2年">小学2年</option>
+                                <option value="小学3年">小学3年</option>
+                                <option value="小学4年">小学4年</option>
+                                <option value="小学5年">小学5年</option>
+                                <option value="小学6年">小学6年</option>
+                                <option value="中学1年">中学1年</option>
+                                <option value="中学2年">中学2年</option>
+                                <option value="中学3年">中学3年</option>
+                                <option value="高校1年">高校1年</option>
+                                <option value="高校2年">高校2年</option>
+                                <option value="高校3年">高校3年</option>
+                                <option value="その他">その他</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-[var(--foreground)] font-medium mb-2">英語レベル</label>
+                              <select
+                                value={studentEnglishLevel}
+                                onChange={(e) => setStudentEnglishLevel(e.target.value)}
+                                className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
+                              >
+                                <option value="">選択してください</option>
+                                <option value="初心者">初心者</option>
+                                <option value="初級">初級</option>
+                                <option value="中級">中級</option>
+                                <option value="上級">上級</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-[var(--foreground)] font-medium mb-2">備考・特記事項</label>
+                            <textarea
+                              value={studentNotes}
+                              onChange={(e) => setStudentNotes(e.target.value)}
+                              placeholder="例: 好きなもの、苦手なもの、アレルギー、特別な配慮が必要なことなど"
+                              rows={3}
+                              className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 mt-8">
+                    <button
+                      type="button"
+                      onClick={() => setLessonType("")}
+                      className="flex-1 px-6 py-3 bg-[var(--muted)] hover:bg-[var(--muted)]/80 text-[var(--foreground)] font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md"
+                    >
+                      戻る
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        // Validate required fields
+                        if (!customerName || !customerEmail || !password || (!isStudentBooker && !studentName)) {
+                          setFormError("必須項目を入力してください。");
+                          return;
+                        }
+
+                        // Create account automatically
+                        setFormLoading(true);
+                        setFormError(null);
+                        
+                        try {
+                          const result = await fetch('/api/auth/signup', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              email: customerEmail,
+                              password: password,
+                              full_name: customerName,
+                              full_name_kana: customerKana,
+                            })
+                          });
+                          
+                          const data = await result.json();
+                          
+                          if (result.ok) {
+                            // Account created successfully, now sign them in
+                            const { error: signInError } = await signIn(customerEmail, password);
+                            
+                            if (!signInError) {
+                              // Successfully signed in, proceed to next step
+                              setSubstep(2);
+                            } else {
+                              setFormError('アカウントは作成されましたが、ログインに失敗しました。手動でログインしてください。');
+                            }
+                          } else {
+                            setFormError(data.error || 'アカウント作成に失敗しました。');
+                          }
+                        } catch (error) {
+                          console.error('Account creation error:', error);
+                          setFormError('アカウント作成中にエラーが発生しました。');
+                        }
+                        
+                        setFormLoading(false);
+                      }}
+                      disabled={!customerName || !customerEmail || !password || (!isStudentBooker && !studentName) || formLoading}
+                      className="flex-1 px-6 py-3 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] hover:from-[#2563eb] hover:to-[#3b82f6] text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+                    >
+                      {formLoading ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          アカウント作成中...
+                        </div>
+                      ) : (
+                        'アカウントを作成して次へ'
+                      )}
+                    </button>
+                  </div>
+                  
+                  {formError && (
+                    <div className="mt-4 p-3 rounded-xl text-sm bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800">
+                      {formError}
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {substep === 1 && user && (
+                <div className="bg-[var(--card)] border border-[var(--border)] p-8 rounded-xl shadow-lg max-w-3xl mx-auto hover:shadow-xl transition-all duration-300">
                   
                   {/* Participants Section */}
-                  <div className="mb-6">
+                  <div className="mb-8">
                     <h4 className="text-lg text-[var(--foreground)] font-semibold text-center">参加者数を選択</h4>
                     <div className="flex items-center justify-center mt-4 gap-4">
                       <button
@@ -925,9 +1224,9 @@ export default function BookLessonPage() {
                   </div>
 
                   {/* Contact Info Section */}
-                  <div className="space-y-4">
-                    <h4 className="text-lg text-[var(--foreground)] font-semibold text-center">お客様情報</h4>
-                    <div className="grid sm:grid-cols-2 gap-4 mt-4">
+                  <div className="mb-8">
+                    <h4 className="text-lg text-[var(--foreground)] font-semibold text-center mb-4">お客様情報</h4>
+                    <div className="grid sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-[var(--foreground)] font-medium mb-2">お名前（漢字）</label>
                         <input
@@ -951,22 +1250,130 @@ export default function BookLessonPage() {
                         />
                       </div>
                     </div>
-                    <div>
+                    <div className="mt-4">
                       <label className="block text-[var(--foreground)] font-medium mb-2">メールアドレス</label>
-                      <input
-                        type="email"
-                        value={customerEmail}
-                        onChange={(e) => setCustomerEmail(e.target.value)}
-                        placeholder="例: your@email.com"
-                        pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
-                        title="有効なメールアドレスを入力してください"
-                        className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
-                        required
-                      />
+                      <div className="w-full px-4 py-3 rounded-lg bg-[var(--muted)] border border-[var(--border)] text-[var(--muted-foreground)] cursor-not-allowed">
+                        {user?.email}
+                      </div>
+                      <p className="text-xs text-[var(--muted-foreground)] mt-1">
+                        ログインアカウントのメールアドレスが使用されます
+                      </p>
                     </div>
                   </div>
+
+                  {/* Student Info Section */}
+                  <div className="mb-8">
+                    <h4 className="text-lg text-[var(--foreground)] font-semibold text-center mb-4">生徒情報</h4>
+                    
+                    {/* Student is booker toggle */}
+                    <div className="mb-6">
+                      <div className="flex items-center justify-center gap-4">
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={isStudentBooker}
+                            onChange={(e) => {
+                              setIsStudentBooker(e.target.checked);
+                              if (e.target.checked) {
+                                setStudentName(customerName);
+                                setStudentAge("");
+                                setStudentGrade("");
+                                setStudentEnglishLevel("");
+                                setStudentNotes("");
+                              }
+                            }}
+                            className="sr-only"
+                          />
+                          <div className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isStudentBooker ? 'bg-[#3881ff]' : 'bg-gray-300'}`}>
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isStudentBooker ? 'translate-x-6' : 'translate-x-1'}`} />
+                          </div>
+                          <span className="ml-3 text-[var(--foreground)] font-medium">予約者本人がレッスンを受ける</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {!isStudentBooker && (
+                      <div className="space-y-4">
+                        <div className="grid sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-[var(--foreground)] font-medium mb-2">生徒のお名前</label>
+                            <input
+                              type="text"
+                              value={studentName}
+                              onChange={(e) => setStudentName(e.target.value)}
+                              placeholder="例: 山田 花子"
+                              className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
+                              required={!isStudentBooker}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[var(--foreground)] font-medium mb-2">年齢</label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="18"
+                              value={studentAge}
+                              onChange={(e) => setStudentAge(e.target.value)}
+                              placeholder="例: 12"
+                              className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-[var(--foreground)] font-medium mb-2">学年</label>
+                            <select
+                              value={studentGrade}
+                              onChange={(e) => setStudentGrade(e.target.value)}
+                              className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
+                            >
+                              <option value="">選択してください</option>
+                              <option value="未就学児">未就学児</option>
+                              <option value="小学1年">小学1年</option>
+                              <option value="小学2年">小学2年</option>
+                              <option value="小学3年">小学3年</option>
+                              <option value="小学4年">小学4年</option>
+                              <option value="小学5年">小学5年</option>
+                              <option value="小学6年">小学6年</option>
+                              <option value="中学1年">中学1年</option>
+                              <option value="中学2年">中学2年</option>
+                              <option value="中学3年">中学3年</option>
+                              <option value="高校1年">高校1年</option>
+                              <option value="高校2年">高校2年</option>
+                              <option value="高校3年">高校3年</option>
+                              <option value="その他">その他</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[var(--foreground)] font-medium mb-2">英語レベル</label>
+                            <select
+                              value={studentEnglishLevel}
+                              onChange={(e) => setStudentEnglishLevel(e.target.value)}
+                              className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
+                            >
+                              <option value="">選択してください</option>
+                              <option value="初心者">初心者</option>
+                              <option value="初級">初級</option>
+                              <option value="中級">中級</option>
+                              <option value="上級">上級</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[var(--foreground)] font-medium mb-2">備考・特記事項</label>
+                          <textarea
+                            value={studentNotes}
+                            onChange={(e) => setStudentNotes(e.target.value)}
+                            placeholder="例: 好きなもの、苦手なもの、アレルギー、特別な配慮が必要なことなど"
+                            rows={3}
+                            className="w-full px-4 py-3 rounded-lg bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   
-                  <div className="flex gap-4 mt-8">
+                  <div className="flex gap-4">
                     <button
                       type="button"
                       onClick={() => setLessonType("")}
@@ -976,8 +1383,14 @@ export default function BookLessonPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setSubstep(2)}
-                      disabled={!customerName || !customerKana || !customerEmail}
+                      onClick={() => {
+                        // Save student info to profile if needed
+                        if (!isStudentBooker && studentName) {
+                          // TODO: Save student info to user profile
+                        }
+                        setSubstep(2);
+                      }}
+                      disabled={!customerName || !customerKana || !customerEmail || (!isStudentBooker && !studentName)}
                       className="flex-1 px-6 py-3 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] hover:from-[#2563eb] hover:to-[#3b82f6] text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
                     >
                       次へ
@@ -1158,14 +1571,89 @@ export default function BookLessonPage() {
 
                     {/* Right Column - Payment Method */}
                     <div className="space-y-6">
+                      {/* Saved Payment Methods for returning customers */}
+                      {finalPrice !== 0 && savedPaymentMethods.length > 0 && (
+                        <div>
+                          <label className="block text-[var(--foreground)] font-semibold mb-4 text-center lg:text-left">保存済みのカード</label>
+                          <div className="space-y-3">
+                            {savedPaymentMethods.map((pm) => (
+                              <button
+                                key={pm.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedPaymentMethodId(pm.id);
+                                  setPaymentMethod("card");
+                                }}
+                                className={`w-full p-4 rounded-xl border-2 transition-all duration-300 ${
+                                  selectedPaymentMethodId === pm.id
+                                    ? "border-[#3881ff] bg-blue-50 dark:bg-blue-900/20 shadow-md"
+                                    : "border-[var(--border)] bg-[var(--card)] hover:border-[#3881ff] hover:bg-[var(--muted)]/30"
+                                }`}
+                              >
+                                <div className="flex items-center gap-4">
+                                  <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 flex-shrink-0 ${
+                                    selectedPaymentMethodId === pm.id
+                                      ? "bg-[#3881ff] text-white" 
+                                      : "bg-[var(--muted)] text-[var(--muted-foreground)]"
+                                  }`}>
+                                    💳
+                                  </div>
+                                  <div className="flex-1 text-left">
+                                    <div className={`font-semibold transition-colors duration-300 ${
+                                      selectedPaymentMethodId === pm.id
+                                        ? "text-[#3881ff]" 
+                                        : "text-[var(--foreground)]"
+                                    }`}>
+                                      {pm.card.brand.toUpperCase()} •••• {pm.card.last4}
+                                    </div>
+                                    <div className="text-sm text-[var(--muted-foreground)] mt-1">
+                                      有効期限: {pm.card.exp_month.toString().padStart(2, '0')}/{pm.card.exp_year}
+                                    </div>
+                                  </div>
+                                  {selectedPaymentMethodId === pm.id && (
+                                    <div className="w-6 h-6 bg-[#3881ff] rounded-full flex items-center justify-center flex-shrink-0">
+                                      <span className="text-white text-sm">✓</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </button>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedPaymentMethodId(null);
+                                setShowSavePaymentMethod(true);
+                                setPaymentMethod("card");
+                              }}
+                              className="w-full p-4 rounded-xl border-2 border-dashed border-[var(--border)] bg-[var(--card)] hover:border-[#3881ff] hover:bg-[var(--muted)]/30 transition-all duration-300"
+                            >
+                              <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full bg-[var(--muted)] flex items-center justify-center flex-shrink-0">
+                                  <span className="text-[var(--muted-foreground)]">➕</span>
+                                </div>
+                                <div className="text-left">
+                                  <div className="font-semibold text-[var(--foreground)]">新しいカードを追加</div>
+                                  <div className="text-sm text-[var(--muted-foreground)]">安全に保存されます</div>
+                                </div>
+                              </div>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Payment Method Selection - Only show if not free */}
-                      {finalPrice !== 0 && (
+                      {finalPrice !== 0 && (savedPaymentMethods.length === 0 || !selectedPaymentMethodId) && (
                         <div>
                           <label className="block text-[var(--foreground)] font-semibold mb-4 text-center lg:text-left">お支払い方法を選択</label>
                           <div className="grid grid-cols-1 gap-4">
                             <button
                               type="button"
-                              onClick={() => setPaymentMethod("card")}
+                              onClick={() => {
+                                setPaymentMethod("card");
+                                if (savedPaymentMethods.length > 0) {
+                                  setShowSavePaymentMethod(true);
+                                }
+                              }}
                               className={`group relative p-4 rounded-xl border-2 transition-all duration-300 ${
                                 paymentMethod === "card"
                                   ? "border-[#3881ff] bg-blue-50 dark:bg-blue-900/20 shadow-md"
@@ -1190,6 +1678,11 @@ export default function BookLessonPage() {
                                   </div>
                                   <div className="text-sm text-[var(--muted-foreground)] mt-1">
                                     Visa, MasterCard, JCB
+                                    {savedPaymentMethods.length === 0 && user && (
+                                      <div className="text-green-600 dark:text-green-400">
+                                        • カード情報を保存して次回簡単決済
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                                 {paymentMethod === "card" && (

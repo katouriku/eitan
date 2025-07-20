@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
+import { createClient } from '@supabase/supabase-js';
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 if (!stripeSecret) {
@@ -9,10 +10,14 @@ const stripe = new Stripe(stripeSecret, {
   apiVersion: "2025-05-28.basil",
 });
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { lessonType, participants, currency = "jpy", coupon } = body;
+    const { lessonType, participants, currency = "jpy", coupon, userId, paymentMethodId } = body;
     // Validate and calculate amount on backend
     let base = 0;
     if (lessonType === "in-person") base = 3000;
@@ -56,10 +61,27 @@ export async function POST(req: Request) {
       amount = discountedAmount;
     }
 
+    // Get customer ID if userId is provided
+    let stripeCustomerId: string | undefined;
+    if (userId) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('stripe_customer_id')
+        .eq('id', userId)
+        .single();
+      
+      if (profile?.stripe_customer_id) {
+        stripeCustomerId = profile.stripe_customer_id;
+      }
+    }
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount,
       currency,
       automatic_payment_methods: { enabled: true },
+      ...(stripeCustomerId && { customer: stripeCustomerId }),
+      ...(paymentMethodId && { payment_method: paymentMethodId }),
+      ...(paymentMethodId && { confirmation_method: 'manual', confirm: true }),
       ...(promotionCodeId && { discounts: [{ promotion_code: promotionCodeId }] }),
     });
     return NextResponse.json({ clientSecret: paymentIntent.client_secret, finalAmount: amount });

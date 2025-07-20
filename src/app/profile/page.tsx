@@ -15,6 +15,16 @@ interface Student {
   notes: string;
 }
 
+interface Lesson {
+  id: string;
+  date: string;
+  duration: number;
+  participants: number;
+  lesson_type: 'online' | 'in-person';
+  status: 'upcoming' | 'completed' | 'cancelled';
+  created_at: string;
+}
+
 export default function ProfilePage() {
   const { user, signOut } = useAuth();
   const router = useRouter();
@@ -23,11 +33,13 @@ export default function ProfilePage() {
   const [error, setError] = useState('');
   const [showProfileSuccess, setShowProfileSuccess] = useState(false);
   const [fullName, setFullName] = useState('');
+  const [fullNameKana, setFullNameKana] = useState('');
   const [preferredLocation, setPreferredLocation] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [students, setStudents] = useState<Student[]>([]);
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'students'>('profile');
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'students' | 'lessons'>('profile');
   const [newStudent, setNewStudent] = useState<Student>({
     name: '',
     age: '',
@@ -55,6 +67,7 @@ export default function ProfilePage() {
       } else if (profileData) {
         // Override with database values if they exist
         setFullName(profileData.full_name || user.user_metadata?.full_name || '');
+        setFullNameKana(profileData.full_name_kana || user.user_metadata?.full_name_kana || '');
         setPreferredLocation(profileData.preferred_location || user.user_metadata?.preferred_location || '');
       }
 
@@ -70,6 +83,39 @@ export default function ProfilePage() {
       } else {
         setStudents(studentsData || []);
       }
+
+      // Load lessons (bookings)
+      const { data: lessonsData, error: lessonsError } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('customer_email', user.email)
+        .order('date', { ascending: false });
+
+      if (lessonsError) {
+        console.error('Error loading lessons:', lessonsError);
+      } else {
+        // Transform booking data to lesson format
+        const transformedLessons: Lesson[] = (lessonsData || []).map((booking) => {
+          const bookingDate = new Date(booking.date);
+          const now = new Date();
+          let status: 'upcoming' | 'completed' | 'cancelled' = 'upcoming';
+          
+          if (bookingDate < now) {
+            status = 'completed';
+          }
+          
+          return {
+            id: booking.id,
+            date: booking.date,
+            duration: booking.duration,
+            participants: booking.participants,
+            lesson_type: booking.lesson_type,
+            status,
+            created_at: booking.created_at
+          };
+        });
+        setLessons(transformedLessons);
+      }
     } catch (err) {
       console.error('Error loading user data:', err);
     }
@@ -83,6 +129,7 @@ export default function ProfilePage() {
     
     // Load user profile data from metadata and from database
     setFullName(user.user_metadata?.full_name || '');
+    setFullNameKana(user.user_metadata?.full_name_kana || '');
     setPreferredLocation(user.user_metadata?.preferred_location || '');
     
     // Load user profile and students from database
@@ -104,6 +151,7 @@ export default function ProfilePage() {
           {
             user_id: user.id,
             full_name: fullName,
+            full_name_kana: fullNameKana,
             preferred_location: preferredLocation,
           },
           { onConflict: 'user_id' }
@@ -117,6 +165,7 @@ export default function ProfilePage() {
       const { error: authError } = await supabase.auth.updateUser({
         data: { 
           full_name: fullName,
+          full_name_kana: fullNameKana,
           preferred_location: preferredLocation
         }
       });
@@ -349,6 +398,21 @@ export default function ProfilePage() {
                   生徒管理
                 </div>
               </button>
+              <button
+                onClick={() => setActiveTab('lessons')}
+                className={`px-6 py-4 font-medium transition-colors ${
+                  activeTab === 'lessons'
+                    ? 'text-[#3881ff] border-b-2 border-[#3881ff]'
+                    : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  レッスン履歴
+                </div>
+              </button>
             </nav>
           </div>
 
@@ -404,6 +468,20 @@ export default function ProfilePage() {
                         className="w-full px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
                         placeholder="山田 太郎"
                         required
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="fullNameKana" className="block text-sm font-medium text-[var(--foreground)] mb-2">
+                        氏名（ひらがな）
+                      </label>
+                      <input
+                        id="fullNameKana"
+                        type="text"
+                        value={fullNameKana}
+                        onChange={(e) => setFullNameKana(e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
+                        placeholder="やまだ たろう"
                       />
                     </div>
 
@@ -781,6 +859,143 @@ export default function ProfilePage() {
                         )}
                       </div>
                     ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Lessons Tab Content */}
+            {activeTab === 'lessons' && (
+              <div className="p-8">
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold text-[var(--foreground)] mb-2">レッスン履歴</h2>
+                  <p className="text-[var(--muted-foreground)]">過去と今後のレッスンを確認できます。</p>
+                </div>
+
+                {/* Lessons List */}
+                <div className="space-y-6">
+                  {lessons.length === 0 ? (
+                    <div className="text-center py-12 text-[var(--muted-foreground)]">
+                      <svg className="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <p className="text-lg mb-2">まだレッスンの予約がありません</p>
+                      <p className="text-sm">初回レッスンを予約してみましょう！</p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Upcoming Lessons */}
+                      {lessons.some(lesson => lesson.status === 'upcoming') && (
+                        <div className="mb-8">
+                          <h3 className="text-lg font-semibold text-[var(--foreground)] mb-4 flex items-center gap-2">
+                            <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            今後の予定
+                          </h3>
+                          <div className="grid gap-4">
+                            {lessons.filter(lesson => lesson.status === 'upcoming').map((lesson) => (
+                              <div key={lesson.id} className="p-6 border border-blue-200 dark:border-blue-800 rounded-xl bg-blue-50 dark:bg-blue-900/10">
+                                <div className="flex justify-between items-start mb-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                    <h4 className="text-lg font-semibold text-[var(--foreground)]">
+                                      {lesson.lesson_type === 'online' ? 'オンライン' : '対面'}レッスン
+                                    </h4>
+                                  </div>
+                                  <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 text-sm font-medium rounded-full">
+                                    予約済み
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                  <div>
+                                    <span className="text-[var(--muted-foreground)]">日時:</span>
+                                    <p className="font-medium text-[var(--foreground)]">
+                                      {new Date(lesson.date).toLocaleDateString('ja-JP', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric',
+                                        weekday: 'short'
+                                      })}
+                                    </p>
+                                    <p className="text-[var(--foreground)]">
+                                      {new Date(lesson.date).toLocaleTimeString('ja-JP', {
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <span className="text-[var(--muted-foreground)]">時間:</span>
+                                    <p className="font-medium text-[var(--foreground)]">{lesson.duration}分</p>
+                                  </div>
+                                  <div>
+                                    <span className="text-[var(--muted-foreground)]">参加者数:</span>
+                                    <p className="font-medium text-[var(--foreground)]">{lesson.participants}名</p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Past Lessons */}
+                      {lessons.some(lesson => lesson.status === 'completed') && (
+                        <div>
+                          <h3 className="text-lg font-semibold text-[var(--foreground)] mb-4 flex items-center gap-2">
+                            <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            過去のレッスン
+                          </h3>
+                          <div className="grid gap-4">
+                            {lessons.filter(lesson => lesson.status === 'completed').map((lesson) => (
+                              <div key={lesson.id} className="p-6 border border-[var(--border)] rounded-xl bg-[var(--card)]">
+                                <div className="flex justify-between items-start mb-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                    <h4 className="text-lg font-semibold text-[var(--foreground)]">
+                                      {lesson.lesson_type === 'online' ? 'オンライン' : '対面'}レッスン
+                                    </h4>
+                                  </div>
+                                  <span className="px-3 py-1 bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200 text-sm font-medium rounded-full">
+                                    完了
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                  <div>
+                                    <span className="text-[var(--muted-foreground)]">日時:</span>
+                                    <p className="font-medium text-[var(--foreground)]">
+                                      {new Date(lesson.date).toLocaleDateString('ja-JP', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric',
+                                        weekday: 'short'
+                                      })}
+                                    </p>
+                                    <p className="text-[var(--foreground)]">
+                                      {new Date(lesson.date).toLocaleTimeString('ja-JP', {
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <span className="text-[var(--muted-foreground)]">時間:</span>
+                                    <p className="font-medium text-[var(--foreground)]">{lesson.duration}分</p>
+                                  </div>
+                                  <div>
+                                    <span className="text-[var(--muted-foreground)]">参加者数:</span>
+                                    <p className="font-medium text-[var(--foreground)]">{lesson.participants}名</p>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

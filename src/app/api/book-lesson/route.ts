@@ -13,7 +13,28 @@ function formatICSDate(date: Date) {
 }
 
 export async function POST(req: NextRequest) {
-  const { name, kana, email, date, duration, details, lessonType, participants, coupon, regularPrice, discountAmount, finalPrice, paymentMethod } = await req.json();
+  const { 
+    name, 
+    kana, 
+    email, 
+    date, 
+    duration, 
+    details, 
+    lessonType, 
+    participants, 
+    coupon, 
+    regularPrice, 
+    discountAmount, 
+    finalPrice, 
+    paymentMethod,
+    // Student information
+    isStudentBooker,
+    studentName,
+    studentAge,
+    studentGrade,
+    studentEnglishLevel,
+    studentNotes
+  } = await req.json();
   const start = new Date(date);
   const end = new Date(start.getTime() + (duration || 60) * 60000);
 
@@ -64,6 +85,30 @@ export async function POST(req: NextRequest) {
           <td style="padding: 8px 0; font-weight: bold; color: #555;">参加者数：</td>
           <td style="padding: 8px 0; color: #333;">${participants}名</td>
         </tr>
+        ${!isStudentBooker && studentName ? `
+        <tr>
+          <td style="padding: 8px 0; font-weight: bold; color: #555;">生徒名：</td>
+          <td style="padding: 8px 0; color: #333;">${studentName}</td>
+        </tr>
+        ${studentAge ? `
+        <tr>
+          <td style="padding: 8px 0; font-weight: bold; color: #555;">年齢：</td>
+          <td style="padding: 8px 0; color: #333;">${studentAge}歳</td>
+        </tr>
+        ` : ''}
+        ${studentGrade ? `
+        <tr>
+          <td style="padding: 8px 0; font-weight: bold; color: #555;">学年：</td>
+          <td style="padding: 8px 0; color: #333;">${studentGrade}</td>
+        </tr>
+        ` : ''}
+        ${studentEnglishLevel ? `
+        <tr>
+          <td style="padding: 8px 0; font-weight: bold; color: #555;">英語レベル：</td>
+          <td style="padding: 8px 0; color: #333;">${studentEnglishLevel}</td>
+        </tr>
+        ` : ''}
+        ` : ''}
         <tr>
           <td style="padding: 8px 0; font-weight: bold; color: #555;">支払い方法：</td>
           <td style="padding: 8px 0; color: #333;">${
@@ -101,6 +146,14 @@ export async function POST(req: NextRequest) {
     </div>
   `;
 
+  // Student notes section (if provided)
+  const studentNotesSection = studentNotes ? `
+    <div style="background-color: #e7f3ff; border-left: 4px solid #0056b3; padding: 20px; margin: 20px 0; border-radius: 4px;">
+      <h3 style="color: #333; margin-top: 0; margin-bottom: 15px; font-size: 18px;">📝 特記事項・備考</h3>
+      <p style="color: #333; margin: 0; line-height: 1.6;">${studentNotes}</p>
+    </div>
+  ` : '';
+
   // Prepare booking data
   const bookingData = {
     name,
@@ -114,7 +167,14 @@ export async function POST(req: NextRequest) {
     coupon: coupon || undefined,
     regular_price: regularPrice || 0,
     discount_amount: discountAmount || 0,
-    final_price: finalPrice || 0
+    final_price: finalPrice || 0,
+    // Student information
+    is_student_booker: isStudentBooker,
+    student_name: isStudentBooker ? name : studentName,
+    student_age: studentAge || undefined,
+    student_grade: studentGrade || undefined,
+    student_english_level: studentEnglishLevel || undefined,
+    student_notes: studentNotes || undefined,
   }
 
   try {
@@ -160,6 +220,8 @@ export async function POST(req: NextRequest) {
         </p>
 
         ${bookingDetails}
+        
+        ${studentNotesSection}
         
         ${priceBreakdown}
         
@@ -249,6 +311,8 @@ export async function POST(req: NextRequest) {
         </div>
         
         ${bookingDetails}
+        
+        ${studentNotesSection}
         
         ${priceBreakdown}
         

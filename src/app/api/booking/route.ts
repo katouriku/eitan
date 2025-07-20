@@ -1,15 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { BookingService } from '@/lib/supabase';
 
-// GET: Fetch bookings for a given date (YYYY-MM-DD) or range (start, end)
+// GET: Fetch bookings for a given date (YYYY-MM-DD) or range (start, end) or by customer email
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const date = searchParams.get('date');
   const startParam = searchParams.get('start');
   const endParam = searchParams.get('end');
+  const customerEmail = searchParams.get('customer_email');
 
   try {
-    if (date) {
+    if (customerEmail) {
+      // Get all bookings for a specific customer email
+      const bookings = await BookingService.getBookingsByEmail(customerEmail);
+      
+      const formattedBookings = bookings.map(booking => ({
+        id: booking.id,
+        date: booking.date,
+        duration: booking.duration,
+        participants: booking.participants,
+        lesson_type: booking.lesson_type,
+        created_at: booking.created_at
+      }));
+      
+      return NextResponse.json({ bookings: formattedBookings });
+    } else if (date) {
       // Get all bookings for the day
       const startDate = `${date}T00:00:00Z`;
       const endDate = `${date}T23:59:59Z`;
