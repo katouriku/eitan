@@ -318,14 +318,12 @@ export default function BookLessonPage() {
     }
   }, [user]);
 
-  // Auto-progress if user data exists and lessonType is set
+  // Auto-progress if user data exists and lessonType is set (for URL params or other cases)
   useEffect(() => {
-    if (user && lessonType && !lessonTypeParam) {
-      if (customerName && customerEmail) {
-        // User is authenticated and has required info, skip directly to date/time selection (substep 2)
-        if (substep === 1) {
-          setSubstep(2);
-        }
+    if (user && lessonType && lessonTypeParam) {
+      // Only auto-progress when lesson type is set via URL parameter
+      if (customerName && customerEmail && substep === 1) {
+        setSubstep(2);
       }
     }
   }, [user, lessonType, customerName, customerEmail, lessonTypeParam, substep]);
@@ -859,6 +857,10 @@ export default function BookLessonPage() {
                   className="group relative p-6 rounded-xl border-2 border-[var(--border)] bg-[var(--card)] hover:border-[#3881ff] hover:bg-[var(--muted)]/30 transition-all duration-300 shadow-sm hover:shadow-md"
                   onClick={() => {
                     setLessonType("online");
+                    // For authenticated users with complete info, skip directly to date/time selection
+                    if (user && customerName && customerEmail) {
+                      setSubstep(2);
+                    }
                   }}
                 >
                   <div className="text-center">
@@ -883,6 +885,10 @@ export default function BookLessonPage() {
                   className="group relative p-6 rounded-xl border-2 border-[var(--border)] bg-[var(--card)] hover:border-[#3881ff] hover:bg-[var(--muted)]/30 transition-all duration-300 shadow-sm hover:shadow-md"
                   onClick={() => {
                     setLessonType("in-person");
+                    // For authenticated users with complete info, skip directly to date/time selection
+                    if (user && customerName && customerEmail) {
+                      setSubstep(2);
+                    }
                   }}
                 >
                   <div className="text-center">
