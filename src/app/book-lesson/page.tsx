@@ -823,22 +823,6 @@ export default function BookLessonPage() {
       
       <section className="flex flex-col items-center justify-center w-full px-4">
         <div className="flex flex-col items-center justify-center max-w-4xl min-w-[340px] w-full">
-          {/* Price display - mobile only, hidden on desktop */}
-          <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 mb-4 min-h-[2rem] xl:hidden">
-            {lessonType && (
-              <>
-                <div className="text-base sm:text-lg font-bold text-[var(--muted-foreground)] flex flex-row items-center gap-2">
-                  <span>合計金額(税込み): <span className="text-[#3881ff] text-xl sm:text-2xl font-extrabold">{getDisplayPrice()}</span></span>
-                </div>
-                <div className="text-xs sm:text-sm text-[var(--muted-foreground)] flex flex-row items-center">
-                  (参加者数: {participants}名)
-                </div>
-              </>
-            )}
-          </div>
-          {lessonType && priceError && (
-            <div className="text-red-400 text-sm font-bold text-center mb-4 xl:hidden">{priceError}</div>
-          )}
           {/* If lessonType is set from query, skip selection and go to step 1 form */}
           {step === 1 && lessonType === "" && (
             <div className="bg-[var(--card)] border border-[var(--border)] p-8 rounded-2xl shadow-lg w-full max-w-2xl mx-auto hover:shadow-xl transition-all duration-300">
@@ -1114,8 +1098,8 @@ export default function BookLessonPage() {
                     <div className="w-32 lg:w-40 h-1 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] mx-auto rounded-full"></div>
                   </div>
                   
-                  {/* Desktop Grid Layout */}
-                  <div className="grid lg:grid-cols-2 gap-6 lg:gap-8">
+                  {/* Mobile-first single column layout, desktop switches to two columns */}
+                  <div className="flex flex-col lg:grid lg:grid-cols-2 gap-6 lg:gap-8">
                     
                     {/* Left Column - Summary & Coupon */}
                     <div className="space-y-6">
@@ -1131,9 +1115,13 @@ export default function BookLessonPage() {
                             <span className="text-[var(--muted-foreground)] font-medium">参加者数</span>
                             <span className="text-[var(--foreground)] font-semibold">{participants}名</span>
                           </div>
-                          <div className="flex justify-between items-center py-2">
+                          <div className="flex justify-between items-center py-2 border-b border-[var(--border)]/30">
                             <span className="text-[var(--muted-foreground)] font-medium">予約日時</span>
                             <span className="text-[var(--foreground)] font-semibold text-right">{selectedDate} {selectedTime}</span>
+                          </div>
+                          <div className="flex justify-between items-center py-2">
+                            <span className="text-[var(--muted-foreground)] font-medium">合計金額</span>
+                            <span className="text-[#3881ff] font-bold text-lg">{getDisplayPrice()}</span>
                           </div>
                         </div>
                       </div>
@@ -1141,7 +1129,7 @@ export default function BookLessonPage() {
                       {/* Coupon Section */}
                       <div>
                         <label className="block text-[var(--foreground)] font-semibold mb-3">クーポンコード（任意）</label>
-                        <div className="flex gap-3">
+                        <div className="flex flex-col sm:flex-row gap-3">
                           <input
                             type="text"
                             value={coupon}
@@ -1154,7 +1142,7 @@ export default function BookLessonPage() {
                             type="button"
                             onClick={() => setCouponConfirmed(true)}
                             disabled={!coupon || couponConfirmed || priceLoading || isFreeTrialActive}
-                            className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+                            className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md sm:flex-shrink-0"
                           >
                             {couponConfirmed ? "適用済み" : "適用"}
                           </button>
@@ -1174,25 +1162,25 @@ export default function BookLessonPage() {
                       {finalPrice !== 0 && (
                         <div>
                           <label className="block text-[var(--foreground)] font-semibold mb-4 text-center lg:text-left">お支払い方法を選択</label>
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 gap-4">
                             <button
                               type="button"
                               onClick={() => setPaymentMethod("card")}
-                              className={`group relative p-4 lg:p-6 rounded-xl border-2 transition-all duration-300 ${
+                              className={`group relative p-4 rounded-xl border-2 transition-all duration-300 ${
                                 paymentMethod === "card"
                                   ? "border-[#3881ff] bg-blue-50 dark:bg-blue-900/20 shadow-md"
                                   : "border-[var(--border)] bg-[var(--card)] hover:border-[#3881ff] hover:bg-[var(--muted)]/30"
                               }`}
                             >
-                              <div className="flex flex-col items-center gap-3">
-                                <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
+                              <div className="flex items-center gap-4">
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 flex-shrink-0 ${
                                   paymentMethod === "card" 
                                     ? "bg-[#3881ff] text-white" 
                                     : "bg-[var(--muted)] text-[var(--muted-foreground)] group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30"
                                 }`}>
                                   💳
                                 </div>
-                                <div className="text-center">
+                                <div className="flex-1 text-left">
                                   <div className={`font-semibold transition-colors duration-300 ${
                                     paymentMethod === "card" 
                                       ? "text-[#3881ff]" 
@@ -1200,36 +1188,36 @@ export default function BookLessonPage() {
                                   }`}>
                                     カード決済
                                   </div>
-                                  <div className="text-xs lg:text-sm text-[var(--muted-foreground)] mt-1">
+                                  <div className="text-sm text-[var(--muted-foreground)] mt-1">
                                     Visa, MasterCard, JCB
                                   </div>
                                 </div>
+                                {paymentMethod === "card" && (
+                                  <div className="w-6 h-6 bg-[#3881ff] rounded-full flex items-center justify-center flex-shrink-0">
+                                    <span className="text-white text-sm">✓</span>
+                                  </div>
+                                )}
                               </div>
-                              {paymentMethod === "card" && (
-                                <div className="absolute -top-2 -right-2 w-5 h-5 lg:w-6 lg:h-6 bg-[#3881ff] rounded-full flex items-center justify-center">
-                                  <span className="text-white text-xs lg:text-sm">✓</span>
-                                </div>
-                              )}
                             </button>
                             
                             <button
                               type="button"
                               onClick={() => setPaymentMethod("cash")}
-                              className={`group relative p-4 lg:p-6 rounded-xl border-2 transition-all duration-300 ${
+                              className={`group relative p-4 rounded-xl border-2 transition-all duration-300 ${
                                 paymentMethod === "cash"
                                   ? "border-green-500 bg-green-50 dark:bg-green-900/20 shadow-md"
                                   : "border-[var(--border)] bg-[var(--card)] hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-900/10"
                               }`}
                             >
-                              <div className="flex flex-col items-center gap-3">
-                                <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
+                              <div className="flex items-center gap-4">
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 flex-shrink-0 ${
                                   paymentMethod === "cash" 
                                     ? "bg-green-500 text-white" 
                                     : "bg-[var(--muted)] text-[var(--muted-foreground)] group-hover:bg-green-100 dark:group-hover:bg-green-900/30"
                                 }`}>
                                   💰
                                 </div>
-                                <div className="text-center">
+                                <div className="flex-1 text-left">
                                   <div className={`font-semibold transition-colors duration-300 ${
                                     paymentMethod === "cash" 
                                       ? "text-green-600 dark:text-green-400" 
@@ -1237,16 +1225,16 @@ export default function BookLessonPage() {
                                   }`}>
                                     現金決済
                                   </div>
-                                  <div className="text-xs lg:text-sm text-[var(--muted-foreground)] mt-1">
+                                  <div className="text-sm text-[var(--muted-foreground)] mt-1">
                                     レッスン開始時
                                   </div>
                                 </div>
+                                {paymentMethod === "cash" && (
+                                  <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <span className="text-white text-sm">✓</span>
+                                  </div>
+                                )}
                               </div>
-                              {paymentMethod === "cash" && (
-                                <div className="absolute -top-2 -right-2 w-5 h-5 lg:w-6 lg:h-6 bg-green-500 rounded-full flex items-center justify-center">
-                                  <span className="text-white text-xs lg:text-sm">✓</span>
-                                </div>
-                              )}
                             </button>
                           </div>
                           
@@ -1256,11 +1244,11 @@ export default function BookLessonPage() {
                               <div className="w-8 h-8 bg-[var(--muted)] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                                 <span className="text-[var(--foreground)]">ℹ️</span>
                               </div>
-                              <div>
-                                    <div className="font-semibold text-[var(--foreground)] mb-1">現金お支払いについて</div>
-                                    <div className="text-sm text-[var(--muted-foreground)]">
-                                      レッスン開始前に現金でのお支払いをお願いいたします。お釣りのないようご準備ください。
-                                    </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold text-[var(--foreground)] mb-1">現金お支払いについて</div>
+                                <div className="text-sm text-[var(--muted-foreground)] break-words">
+                                  レッスン開始前に現金でのお支払いをお願いいたします。お釣りのないようご準備ください。
+                                </div>
                               </div>
                             </div>
                           </div>
