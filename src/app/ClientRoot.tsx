@@ -89,16 +89,16 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
               setMenuOpen={setMenuOpen}
             />
             
-            {/* Progress Bar for Book Lesson Page */}
+            {/* Progress Bar for Book Lesson Page - inline positioning */}
             {pathname === '/book-lesson' && (
-              <div className="mt-16 lg:fixed left-0 right-0 z-30">
-                <div id="progress-bar-container" className="max-w-7xl mx-auto bg-transparent py-2">
+              <div className="mt-16 w-full bg-transparent">
+                <div id="progress-bar-container" className="max-w-7xl mx-auto bg-transparent">
                   {/* Progress bar will be rendered here by the booking page */}
                 </div>
               </div>
             )}
             
-            <main className={`flex-1 flex flex-col min-h-0 ${pathname === '/book-lesson' ? 'pt-8 md:pt-0' : 'pt-0'}`}>
+            <main className="flex-1 flex flex-col min-h-0">
               {pathname === "/" ? (
                 <section className="flex-1 relative min-h-0">
                   <div className="absolute inset-0 flex items-center justify-center px-4 sm:px-6">
@@ -124,10 +124,10 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
                   </div>
                 </section>
               ) : pathname === '/book-lesson' ? (
-                <section className="flex-1 relative min-h-0 pt-8">
-                  {/* Main content - mobile: starts right after progress bar, desktop: centered */}
-                  <div className="px-4 sm:px-6 py-4 lg:flex lg:items-center lg:justify-center lg:min-h-full lg:py-8 lg:pt-40">
-                    <div className="w-full max-w-4xl mx-auto -mt-20 lg:-mt-0">
+                <section className="flex-1 relative min-h-0">
+                  {/* Main content - centered vertically like sidebar */}
+                  <div className="px-4 sm:px-6 py-4 lg:flex lg:items-center lg:justify-center lg:min-h-full">
+                    <div className="w-full max-w-4xl mx-auto">
                       {children}
                     </div>
                   </div>

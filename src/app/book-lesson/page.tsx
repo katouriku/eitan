@@ -92,7 +92,6 @@ function StripePaymentForm({ onSuccess, onError, onBack }: { clientSecret: strin
 export default function BookLessonPage() {
   const { resolvedTheme } = useTheme();
   const { user, signIn } = useAuth();
-  const [hasExistingBooking, setHasExistingBooking] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -100,7 +99,7 @@ export default function BookLessonPage() {
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [step, setStepState] = useState<1 | 2 | 3>(1);
-  const [substep, setSubstep] = useState<1 | 2 | 3>(1); // 1: participants+contact, 2: date/time, 3: price/payment
+  const [substep, setSubstep] = useState<1 | 2 | 3 | 4>(1); // 1: basic info, 2: student info, 3: date/time, 4: price/payment
   const [lessonType, setLessonType] = useState<"online" | "in-person" | "">("");
   const [participants, setParticipants] = useState(1);
   const [showParticipantWarning, setShowParticipantWarning] = useState(false);
@@ -141,7 +140,6 @@ export default function BookLessonPage() {
     };
   }>>([]);
   const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<string | null>(null);
-  const [showSavePaymentMethod, setShowSavePaymentMethod] = useState(false);
   const [password, setPassword] = useState("");
 
   // Check for existing bookings to determine if free trial should be offered
@@ -154,9 +152,8 @@ export default function BookLessonPage() {
         const data = await response.json();
         
         if (response.ok && data.bookings && data.bookings.length > 0) {
-          setHasExistingBooking(true);
+          // User has existing bookings - no free trial
         } else {
-          setHasExistingBooking(false);
           // If no existing bookings, offer free trial
           setCoupon("freelesson");
           setCouponConfirmed(true);
@@ -164,7 +161,6 @@ export default function BookLessonPage() {
         }
       } catch (error) {
         console.error('Error checking existing bookings:', error);
-        setHasExistingBooking(false);
       }
     };
 
@@ -326,11 +322,13 @@ export default function BookLessonPage() {
   useEffect(() => {
     if (user && lessonType && !lessonTypeParam) {
       if (customerName && customerEmail) {
-        // User is authenticated and has required info, skip to date/time selection
-        setSubstep(2);
+        // User is authenticated and has required info, skip directly to date/time selection (substep 2)
+        if (substep === 1) {
+          setSubstep(2);
+        }
       }
     }
-  }, [user, lessonType, customerName, customerEmail, lessonTypeParam]);
+  }, [user, lessonType, customerName, customerEmail, lessonTypeParam, substep]);
 
   // If lessonType is provided in the query, set it and skip selection
   useEffect(() => {
@@ -661,19 +659,35 @@ export default function BookLessonPage() {
   }
 
   // Progress bar component
-  function ProgressBar({ step, substep }: { step: 1 | 2 | 3, substep?: 1 | 2 | 3 }) {
-    // Convert to unified 5-step system: 1=lesson type, 2=participants+contact, 3=date/time, 4=payment, 5=confirmation
+  function ProgressBar({ step, substep }: { step: 1 | 2 | 3, substep?: 1 | 2 | 3 | 4 }) {
+    // For authenticated users: 1=lesson type, 2=date/time, 3=payment, 4=confirmation
+    // For non-authenticated users: 1=lesson type, 2=info, 3=date/time, 4=payment, 5=confirmation
     let currentStep = 1;
+    const isAuthenticated = !!user;
+    
     if (step === 1) {
-      if (lessonType === "") currentStep = 1; // lesson type selection
-      else currentStep = substep ? substep + 1 : 2; // substeps 1-3 become steps 2-4
+      if (lessonType === "") {
+        currentStep = 1; // lesson type selection
+      } else if (isAuthenticated) {
+        // Authenticated users skip info step
+        if (substep === 2) currentStep = 2; // date/time
+        else if (substep === 3) currentStep = 3; // payment
+      } else {
+        // Non-authenticated users have info step
+        if (substep === 1) currentStep = 2; // info
+        else if (substep === 2) currentStep = 3; // date/time
+        else if (substep === 3) currentStep = 4; // payment
+      }
     } else if (step === 2) {
-      currentStep = 4; // payment
+      currentStep = isAuthenticated ? 3 : 4; // payment (Stripe)
     } else if (step === 3) {
-      currentStep = 5; // confirmation
+      currentStep = isAuthenticated ? 4 : 5; // confirmation
     }
 
-    const stepLabels = ["タイプ", "情報", "日時", "支払い", "完了"];
+    const stepLabels = isAuthenticated 
+      ? ["タイプ", "日時", "支払い", "完了"]
+      : ["タイプ", "情報", "日時", "支払い", "完了"];
+    const totalSteps = isAuthenticated ? 4 : 5;
     
     // Handle clicking on completed steps
     const handleStepClick = (stepNum: number) => {
@@ -683,12 +697,15 @@ export default function BookLessonPage() {
         // Reset to lesson type selection
         setLessonType("");
         setSubstep(1);
-      } else if (stepNum === 2 && lessonType) {
-        setSubstep(1); // participants + contact
-      } else if (stepNum === 3 && lessonType) {
-        setSubstep(2); // date/time
-      } else if (stepNum === 4 && lessonType) {
-        setSubstep(3); // payment
+      } else if (isAuthenticated) {
+        // Authenticated user flow
+        if (stepNum === 2 && lessonType) setSubstep(2); // date/time
+        else if (stepNum === 3 && lessonType) setSubstep(3); // payment
+      } else {
+        // Non-authenticated user flow  
+        if (stepNum === 2 && lessonType) setSubstep(1); // info
+        else if (stepNum === 3 && lessonType) setSubstep(2); // date/time
+        else if (stepNum === 4 && lessonType) setSubstep(3); // payment
       }
     };
     
@@ -713,7 +730,7 @@ export default function BookLessonPage() {
               style={{ 
                 top: '100%',
                 transform: 'translateY(-50%)',
-                width: currentStep === 1 ? '0px' : `calc((100% - var(--progress-offset, 50px)) * ${(currentStep - 1) / 4})`,
+                width: currentStep === 1 ? '0px' : `calc((100% - var(--progress-offset, 50px)) * ${(currentStep - 1) / (totalSteps - 1)})`,
                 zIndex: 2
               }}
             />
@@ -721,7 +738,7 @@ export default function BookLessonPage() {
           
           {/* Step circles and labels combined */}
           <div className="flex items-start justify-between progress-bar-container progress-bar-margin">
-            {[1, 2, 3, 4, 5].map((stepNum) => (
+            {Array.from({length: totalSteps}, (_, i) => i + 1).map((stepNum) => (
               <div key={stepNum} className="flex flex-col items-center">
                 <button
                   onClick={() => handleStepClick(stepNum)}
@@ -887,7 +904,7 @@ export default function BookLessonPage() {
                   </div>
                 </button>
               </div>
-              <div className="text-sm text-[var(--muted-foreground)] mt-8 text-center bg-[var(--muted)]/30 p-4 rounded-xl border border-[var(--border)]">
+              <div className="text-sm text-[var(--muted-foreground)] mt-4 text-center bg-[var(--muted)]/30 p-4 rounded-xl border border-[var(--border)]">
                 ※ 対面レッスンは美里町から30分以内の場所のみ対応しています。
               </div>
             </div>
@@ -903,9 +920,9 @@ export default function BookLessonPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                     </div>
-                    <h4 className="text-2xl text-[var(--foreground)] font-bold mb-2">お客様情報の入力</h4>
+                    <h4 className="text-2xl text-[var(--foreground)] font-bold mb-2">基本情報の入力</h4>
                     <p className="text-[var(--muted-foreground)]">
-                      予約のためにアカウントを作成いたします
+                      アカウント作成に必要な基本情報を入力してください
                     </p>
                   </div>
 
@@ -1173,7 +1190,7 @@ export default function BookLessonPage() {
                           アカウント作成中...
                         </div>
                       ) : (
-                        'アカウントを作成して次へ'
+                        '次へ'
                       )}
                     </button>
                   </div>
@@ -1420,7 +1437,16 @@ export default function BookLessonPage() {
                       {/* Return button positioned below calendar on desktop only */}
                       <button
                         type="button"
-                        onClick={() => setSubstep(1)}
+                        onClick={() => {
+                          if (user) {
+                            // For authenticated users, go back to lesson type selection
+                            setLessonType("");
+                            setSubstep(1);
+                          } else {
+                            // For non-authenticated users, go back to info step
+                            setSubstep(1);
+                          }
+                        }}
                         className="w-full mt-4 px-6 py-3 bg-[var(--muted)] hover:bg-[var(--muted)]/80 text-[var(--foreground)] font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md hidden lg:block"
                       >
                         戻る
@@ -1449,7 +1475,7 @@ export default function BookLessonPage() {
                                   onClick={() => {
                                     if (!slot.disabled) {
                                       setSelectedTime(slot.value);
-                                      // Auto-advance to next step when time is selected
+                                      // Auto-advance to payment step when time is selected
                                       setTimeout(() => setSubstep(3), 300);
                                     }
                                   }}
@@ -1487,7 +1513,16 @@ export default function BookLessonPage() {
                   <div className="mt-8 lg:hidden flex justify-center">
                     <button
                       type="button"
-                      onClick={() => setSubstep(1)}
+                      onClick={() => {
+                        if (user) {
+                          // For authenticated users, go back to lesson type selection
+                          setLessonType("");
+                          setSubstep(1);
+                        } else {
+                          // For non-authenticated users, go back to info step
+                          setSubstep(1);
+                        }
+                      }}
                       className="w-full px-6 py-3 bg-[var(--muted)] hover:bg-[var(--muted)]/80 text-[var(--foreground)] font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md"
                     >
                       戻る
@@ -1498,7 +1533,9 @@ export default function BookLessonPage() {
 
               {/* Stage 3: Price and Payment */}
               {substep === 3 && (
-                <form onSubmit={handleSubmit} className="bg-[var(--card)] border border-[var(--border)] p-6 lg:p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 w-full max-w-6xl mx-auto">
+                <form onSubmit={handleSubmit} className={`bg-[var(--card)] border border-[var(--border)] p-6 lg:p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 w-full mx-auto ${
+                  finalPrice === 0 ? 'max-w-2xl' : 'max-w-6xl'
+                }`}>
                   <input type="hidden" name="lessonType" value={lessonType} />
                   <input type="hidden" name="name" value={customerName} />
                   <input type="hidden" name="kana" value={customerKana} />
@@ -1512,7 +1549,7 @@ export default function BookLessonPage() {
                   </div>
                   
                   {/* Mobile-first single column layout, desktop switches to two columns */}
-                  <div className="flex flex-col lg:grid lg:grid-cols-2 gap-6 lg:gap-8">
+                  <div className={`flex flex-col gap-6 lg:gap-8 ${finalPrice !== 0 ? 'lg:grid lg:grid-cols-2' : ''}`}>
                     
                     {/* Left Column - Summary & Coupon */}
                     <div className="space-y-6">
@@ -1539,34 +1576,42 @@ export default function BookLessonPage() {
                         </div>
                       </div>
 
-                      {/* Coupon Section */}
-                      <div>
-                        <label className="block text-[var(--foreground)] font-semibold mb-3">クーポンコード（任意）</label>
-                        <div className="flex flex-col sm:flex-row gap-3">
-                          <input
-                            type="text"
-                            value={coupon}
-                            onChange={(e) => setCoupon(e.target.value)}
-                            placeholder="クーポンコードを入力"
-                            className="flex-1 px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
-                            disabled={isFreeTrialActive}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setCouponConfirmed(true)}
-                            disabled={!coupon || couponConfirmed || priceLoading || isFreeTrialActive}
-                            className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md sm:flex-shrink-0"
-                          >
-                            {couponConfirmed ? "適用済み" : "適用"}
-                          </button>
-                        </div>
-                        {isFreeTrialActive && (
-                          <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl text-sm text-green-800 dark:text-green-200 flex items-center gap-2">
-                            <span>🎉</span>
-                            <span><strong>無料体験レッスン</strong>が適用されています</span>
+                      {/* Coupon Section - Only show if not using free trial */}
+                      {!isFreeTrialActive && (
+                        <div>
+                          <label className="block text-[var(--foreground)] font-semibold mb-3">クーポンコード（任意）</label>
+                          <div className="flex flex-col sm:flex-row gap-3">
+                            <input
+                              type="text"
+                              value={coupon}
+                              onChange={(e) => setCoupon(e.target.value)}
+                              placeholder="クーポンコードを入力"
+                              className="flex-1 px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setCouponConfirmed(true)}
+                              disabled={!coupon || couponConfirmed || priceLoading}
+                              className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md sm:flex-shrink-0"
+                            >
+                              {couponConfirmed ? "適用済み" : "適用"}
+                            </button>
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
+
+                      {/* Free Trial Notification */}
+                      {isFreeTrialActive && (
+                        <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl text-green-800 dark:text-green-200">
+                          <div className="flex items-center gap-3">
+                            <span className="text-2xl">🎉</span>
+                            <div>
+                              <div className="font-semibold text-lg">無料体験レッスン</div>
+                              <div className="text-sm opacity-90">初回限定の無料体験レッスンが適用されています</div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Right Column - Payment Method */}
@@ -1622,7 +1667,6 @@ export default function BookLessonPage() {
                               type="button"
                               onClick={() => {
                                 setSelectedPaymentMethodId(null);
-                                setShowSavePaymentMethod(true);
                                 setPaymentMethod("card");
                               }}
                               className="w-full p-4 rounded-xl border-2 border-dashed border-[var(--border)] bg-[var(--card)] hover:border-[#3881ff] hover:bg-[var(--muted)]/30 transition-all duration-300"
@@ -1650,9 +1694,6 @@ export default function BookLessonPage() {
                               type="button"
                               onClick={() => {
                                 setPaymentMethod("card");
-                                if (savedPaymentMethods.length > 0) {
-                                  setShowSavePaymentMethod(true);
-                                }
                               }}
                               className={`group relative p-4 rounded-xl border-2 transition-all duration-300 ${
                                 paymentMethod === "card"
@@ -1761,18 +1802,22 @@ export default function BookLessonPage() {
                   </div>
 
                   {/* Action Buttons - Full Width */}
-                  <div className="flex flex-col sm:flex-row gap-4 mt-6 lg:mt-8">
+                  <div className={`flex flex-col sm:flex-row gap-4 ${finalPrice === 0 ? 'mx-auto max-w-md' : ''}`}>
                     <button
                       type="button"
                       onClick={() => setSubstep(2)}
-                      className="flex-1 px-6 py-3 bg-[var(--muted)] hover:bg-[var(--muted)]/80 text-[var(--foreground)] font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md"
+                      className={`px-6 py-3 bg-[var(--muted)] hover:bg-[var(--muted)]/80 text-[var(--foreground)] font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md ${
+                        finalPrice === 0 ? 'flex-1' : 'flex-1'
+                      }`}
                     >
                       戻る
                     </button>
                     <button
                       type="submit"
                       disabled={formLoading}
-                      className="flex-1 px-6 py-3 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] hover:from-[#2563eb] hover:to-[#3b82f6] text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+                      className={`px-6 py-3 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] hover:from-[#2563eb] hover:to-[#3b82f6] text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md ${
+                        finalPrice === 0 ? 'flex-1' : 'flex-1'
+                      }`}
                     >
                       {formLoading ? (
                         <div className="flex items-center justify-center gap-2">
