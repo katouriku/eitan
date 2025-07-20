@@ -196,7 +196,7 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
                   </div>
                 </section>
               ) : pathname === '/book-lesson' ? (
-                <section className="flex-1 relative overflow-y-auto min-h-0 pt-16 lg:pt-20">
+                <section className="flex-1 relative min-h-0 pt-8">
                   {/* Main content - mobile: starts right after progress bar, desktop: centered */}
                   <div className="px-4 sm:px-6 py-4 lg:flex lg:items-center lg:justify-center lg:min-h-full lg:py-8 lg:pt-40">
                     <div className="w-full max-w-4xl mx-auto -mt-20 lg:-mt-0">
