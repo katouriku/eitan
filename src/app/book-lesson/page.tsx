@@ -804,7 +804,7 @@ export default function BookLessonPage() {
 
   // Move this after all hooks
   if (isLoading) {
-    return <LoadingAnimation fullScreen={false} />;
+    return <LoadingAnimation fullScreen={true} />;
   }
 
   return (

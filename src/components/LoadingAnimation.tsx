@@ -27,18 +27,18 @@ export default function LoadingAnimation({
   if (fullScreen) {
     // Full screen overlay that doesn't affect layout
     return (
-      <div className="fixed inset-0 bg-[var(--background)] z-50 flex flex-col items-center justify-center">
+      <div className="fixed inset-0 flex flex-col items-center justify-center">
         <div className="flex flex-col items-center justify-center space-y-6">
           {/* Loading spinner */}
           <div className="relative">
-            <div className="w-16 h-16 border-4 border-[var(--muted)] border-t-[#3881ff] rounded-full animate-spin"></div>
-            <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-r-[#5a9eff] rounded-full animate-spin animation-delay-150"></div>
+            <div className="w-12 h-12 border-4 border-[var(--muted)] border-t-[#3881ff] rounded-full animate-spin"></div>
+            <div className="absolute inset-0 w-12 h-12 border-4 border-transparent border-r-[#5a9eff] rounded-full animate-spin animation-delay-150"></div>
           </div>
           
           {/* Loading text */}
           <div className="text-center">
-            <h2 className="text-xl font-semibold text-[var(--foreground)] mb-2">{message}</h2>
-            <p className="text-[var(--muted-foreground)]">{submessage}</p>
+            <h2 className="text-lg font-semibold text-[var(--foreground)] mb-2">{message}</h2>
+            <p className="text-[var(--muted-foreground)] text-sm">{submessage}</p>
           </div>
           
           {/* Loading dots animation */}
@@ -54,7 +54,7 @@ export default function LoadingAnimation({
 
   // Inline loading for smaller components
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
+    <div className="flex flex-col items-center justify-center space-y-6 py-8">
       {/* Loading spinner */}
       <div className="relative">
         <div className="w-12 h-12 border-4 border-[var(--muted)] border-t-[#3881ff] rounded-full animate-spin"></div>

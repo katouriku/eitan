@@ -43,23 +43,14 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
   // Hamburger menu state
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Free trial offer state
-  const [showFreeTrialOffer, setShowFreeTrialOffer] = useState(false);
+  // Free trial eligibility state (no banner, just for button text)
+  const [isEligibleForFreeTrial, setIsEligibleForFreeTrial] = useState(false);
 
-  // Check if user has already booked a lesson
+  // Check if user is eligible for free trial
   useEffect(() => {
     const hasBookedBefore = Cookies.get("user_has_booked") === "true";
-    const hasSeenOffer = Cookies.get("seen_free_trial_offer") === "true";
-    
-    // Show offer only if user hasn't booked before and hasn't seen the offer
-    setShowFreeTrialOffer(!hasBookedBefore && !hasSeenOffer);
+    setIsEligibleForFreeTrial(!hasBookedBefore);
   }, []);
-
-  // Hide free trial offer
-  const hideFreeTrialOffer = () => {
-    setShowFreeTrialOffer(false);
-    Cookies.set("seen_free_trial_offer", "true", { expires: 30 }); // Remember for 30 days
-  };
 
   // Fetch navigation from Sanity (memoized)
   const fetchNav = useCallback(async () => {
@@ -126,7 +117,6 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
                       {item.label}
                     </Link>
                   ))}
-                  <ThemeToggle />
                 </nav>
 
                 {/* Mobile Menu Button */}
@@ -166,47 +156,7 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
                         {item.label}
                       </Link>
                     ))}
-                    <div className="mt-4 pt-4 border-t border-[var(--border)]">
-                      <ThemeToggle />
-                    </div>
                   </nav>
-                </div>
-              </div>
-            )}
-            
-            {/* Free Trial Offer Banner - Only show on homepage for eligible users */}
-            {pathname === "/" && showFreeTrialOffer && (
-              <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-2 sm:px-4 sm:py-3 mt-16 relative">
-                <div className="max-w-4xl mx-auto">
-                  <div className="flex items-center justify-between gap-2 sm:gap-4">
-                    <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
-                      <div className="text-lg sm:text-2xl flex-shrink-0">🎉</div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-bold text-sm sm:text-lg whitespace-nowrap overflow-hidden text-ellipsis">
-                          初回限定！無料体験レッスン
-                        </div>
-                        <div className="text-xs sm:text-sm opacity-90 hidden sm:block">
-                          今なら体験レッスンを無料で受講できます
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                      <Link
-                        href="/book-lesson?freeTrial=true"
-                        className="bg-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-bold text-sm sm:text-base hover:bg-green-50 transition-colors whitespace-nowrap"
-                        style={{ color: '#16a34a' }}
-                      >
-                        無料体験予約
-                      </Link>
-                      <button
-                        onClick={hideFreeTrialOffer}
-                        className="text-white hover:text-green-200 transition-colors p-1 text-sm sm:text-base"
-                        aria-label="閉じる"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
                 </div>
               </div>
             )}
@@ -225,22 +175,22 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
                 <section className="flex-1 relative min-h-0">
                   <div className="absolute inset-0 flex items-center justify-center px-4 sm:px-6">
                     <div className="max-w-4xl mx-auto text-center">
-                      <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-[#3881ff] mb-4 sm:mb-6 leading-tight"
+                      <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-[#3881ff] mb-4 leading-tight"
                           style={{textShadow:'0 4px 20px rgba(56,129,255,0.30)'}}>
                         {homepage.mainTitle}
                       </h1>
-                      <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-[var(--foreground)] mb-4 sm:mb-6 leading-relaxed">
+                      <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-[var(--foreground)] mb-4 leading-relaxed">
                         {homepage.subtitle}
                       </h2>
-                      <p className="text-base sm:text-lg md:text-xl text-[var(--muted-foreground)] mb-10 sm:mb-12 leading-relaxed max-w-3xl mx-auto">
+                      <p className="text-base sm:text-lg md:text-xl text-[var(--muted-foreground)] mb-10 leading-relaxed max-w-3xl mx-auto">
                         {homepage.description}
                       </p>
                       <Link
-                        href={nav[0].href}
-                        className="inline-block px-6 sm:px-8 py-3 sm:py-4 rounded-full font-bold text-base sm:text-lg md:text-xl bg-gradient-to-r from-[#3881ff] to-[#5a9eff] text-white shadow-xl hover:from-[#5a9eff] hover:to-[#3881ff] hover:scale-105 transition-all duration-300 border-2 border-[#3881ff]/50 hover:border-[#5a9eff] focus:outline-none focus:ring-4 focus:ring-blue-200/50"
+                        href={isEligibleForFreeTrial ? "/book-lesson?freeTrial=true" : nav[0].href}
+                        className="inline-block px-6 sm:px-8 mt-2 py-3 sm:py-4 rounded-full font-bold text-base sm:text-lg md:text-xl bg-gradient-to-r from-[#3881ff] to-[#5a9eff] text-white shadow-xl hover:from-[#5a9eff] hover:to-[#3881ff] hover:scale-105 transition-all duration-300 border-2 border-[#3881ff]/50 focus:outline-none"
                         style={{textShadow:'0 2px 8px rgba(0,0,0,0.20)', color: 'white'}}
                       >
-                        {nav[0].label}
+                        {isEligibleForFreeTrial ? "無料レッスンを予約" : nav[0].label}
                       </Link>
                     </div>
                   </div>
@@ -283,6 +233,8 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
                   特定商取引法に基づく表記
                 </Link>
               </div>
+              {/* Fixed Theme Toggle - positioned in bottom right */}
+              <ThemeToggle />
             </footer>
           </div>
         </LoadingProvider>

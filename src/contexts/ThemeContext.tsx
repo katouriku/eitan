@@ -1,14 +1,15 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
-type Theme = 'light' | 'dark' | 'system';
+type Theme = 'light' | 'dark';
 type ResolvedTheme = 'light' | 'dark';
 
 interface ThemeContextType {
   theme: Theme;
   resolvedTheme: ResolvedTheme;
   setTheme: (theme: Theme) => void;
+  isHydrated: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -26,9 +27,6 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<Theme>('system');
-  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>('dark');
-
   // Function to get system preference
   const getSystemTheme = (): ResolvedTheme => {
     if (typeof window !== 'undefined') {
@@ -37,39 +35,25 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     return 'dark';
   };
 
-  // Function to resolve theme based on current theme setting
-  const resolveTheme = useCallback((currentTheme: Theme): ResolvedTheme => {
-    if (currentTheme === 'system') {
-      return getSystemTheme();
-    }
-    return currentTheme;
-  }, []);
+  // Always start with 'light' to ensure SSR/client consistency
+  const [theme, setThemeState] = useState<Theme>('light');
+  const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>('light');
+  const [isHydrated, setIsHydrated] = useState(false);
 
   // Load theme from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem('theme') as Theme;
-    if (stored && ['light', 'dark', 'system'].includes(stored)) {
+    if (stored && ['light', 'dark'].includes(stored)) {
       setThemeState(stored);
-      setResolvedTheme(resolveTheme(stored));
+      setResolvedTheme(stored);
     } else {
       // Default to system preference
-      setResolvedTheme(getSystemTheme());
+      const systemTheme = getSystemTheme();
+      setThemeState(systemTheme);
+      setResolvedTheme(systemTheme);
     }
-  }, [resolveTheme]);
-
-  // Listen for system theme changes
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
-    const handleChange = () => {
-      if (theme === 'system') {
-        setResolvedTheme(getSystemTheme());
-      }
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [theme]);
+    setIsHydrated(true);
+  }, []);
 
   // Apply theme to document
   useEffect(() => {
@@ -90,12 +74,12 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    setResolvedTheme(resolveTheme(newTheme));
+    setResolvedTheme(newTheme);
     localStorage.setItem('theme', newTheme);
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme, isHydrated }}>
       {children}
     </ThemeContext.Provider>
   );
