@@ -11,21 +11,6 @@ export const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-// Test database connection
-export async function testSupabaseConnection() {
-  try {
-    console.log('Testing Supabase connection...')
-    
-    // Simple connection test using auth
-    await supabase.auth.getSession()
-    console.log('✅ Supabase connection successful!')
-    return { success: true, data: 'Connected successfully' }
-  } catch (error) {
-    console.error('Supabase connection failed:', error)
-    return { success: false, error: String(error) }
-  }
-}
-
 // Database types
 export interface Booking {
   id: string

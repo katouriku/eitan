@@ -26,7 +26,6 @@ function ResetPasswordForm() {
   // Disable automatic redirects when user becomes authenticated from email
   useEffect(() => {
     if (user && searchParams.get('from') === 'email') {
-      console.log('🔧 DEBUG: User authenticated from email, preventing redirect');
       setPreventRedirect(true);
     }
   }, [user, searchParams]);
@@ -36,32 +35,26 @@ function ResetPasswordForm() {
       try {
         // Check if we came from an email link
         const fromEmail = searchParams.get('from') === 'email';
-        console.log('🔧 DEBUG: Password reset page loaded, fromEmail:', fromEmail);
         
         // Check if user is authenticated
         if (!user) {
-          console.log('🔧 DEBUG: No user found');
           setIsValidSession(false);
           setCheckingSession(false);
           return;
         }
 
-        console.log('🔧 DEBUG: User found:', user.email);
-
         if (fromEmail) {
           // If coming from email, we should have a valid session for password reset
           setIsValidSession(true);
-          console.log('🔧 DEBUG: Valid session from email reset link');
         } else {
           // If not from email, redirect to login
-          console.log('🔧 DEBUG: Not from email, redirecting to home');
           router.push('/');
           return;
         }
         
         setCheckingSession(false);
       } catch (err) {
-        console.error('🔧 DEBUG: Error checking session:', err);
+        console.error('Session validation failed:', err);
         setError('Session validation failed');
         setCheckingSession(false);
       }
@@ -73,11 +66,8 @@ function ResetPasswordForm() {
   // Auto-redirect after successful password reset (but not when preventRedirect is true)
   useEffect(() => {
     if (user && isValidSession && !preventRedirect && !checkingSession) {
-      console.log('🔧 DEBUG: Would redirect to home after delay, but preventRedirect is:', preventRedirect);
-      
       if (!preventRedirect) {
         const redirectTimeout = setTimeout(() => {
-          console.log('🔧 DEBUG: Redirecting to home after successful authentication');
           router.push('/');
         }, 5000); // Extended to 5 seconds
 
