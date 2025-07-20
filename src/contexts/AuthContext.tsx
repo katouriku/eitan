@@ -69,6 +69,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error };
       }
       
+      // If user was created successfully, also create user_profiles record
+      if (data.user && data.session) {
+        // User is immediately confirmed, create profile
+        try {
+          const { error: profileError } = await supabase
+            .from('user_profiles')
+            .insert({
+              id: data.user.id,
+              email: data.user.email,
+              full_name: metadata?.full_name || '',
+              full_name_kana: metadata?.full_name_kana || '',
+              preferred_location: metadata?.preferred_location || '',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+          
+          if (profileError) {
+            console.error('Profile creation error during signup:', profileError);
+            // Don't fail signup if profile creation fails
+          }
+        } catch (profileErr) {
+          console.error('Profile creation error during signup:', profileErr);
+        }
+      }
+      
       // Check if user needs email confirmation
       if (data.user && !data.session) {
         return { 

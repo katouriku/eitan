@@ -59,33 +59,108 @@ function StripePaymentForm({ onSuccess, onError, onBack }: { clientSecret: strin
   };
 
   return (
-    <form id="stripe-payment-form" onSubmit={handleSubmit} className="flex flex-col gap-6">
-      <PaymentElement
-        options={{
-          layout: {
-            type: "tabs",
-            defaultCollapsed: false,
-          },
-        }}
-      />
-      {error && <div className="text-red-400 font-bold mt-2">{error}</div>}
-      <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={onBack}
-          className="btn-danger flex-1"
-        >
-          戻る
-        </button>
-        <button
-          className="btn-success flex-1"
-          type="submit"
-          disabled={loading || !stripe || !elements}
-        >
-          {loading ? "処理中..." : "お支払いを確定する"}
-        </button>
+    <div className="space-y-6">
+      {/* Header Section */}
+      <div className="text-center">
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-[#3881ff] to-[#5a9eff] rounded-full mb-4 shadow-md">
+          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+          </svg>
+        </div>
+        <h3 className="text-2xl text-[var(--foreground)] font-bold mb-2">お支払い情報</h3>
+        <p className="text-[var(--muted-foreground)]">
+          安全な決済システムでお支払いを完了してください
+        </p>
       </div>
-    </form>
+
+      <form id="stripe-payment-form" onSubmit={handleSubmit} className="space-y-6">
+        {/* Payment Element Container */}
+        <div className="bg-[var(--muted)]/20 p-6 rounded-xl border border-[var(--border)]">
+          <PaymentElement
+            options={{
+              layout: {
+                type: "tabs",
+                defaultCollapsed: false,
+              },
+              fields: {
+                billingDetails: {
+                  name: "auto",
+                  email: "auto",
+                  phone: "auto",
+                  address: {
+                    country: "auto",
+                    line1: "auto",
+                    line2: "auto",
+                    city: "auto",
+                    state: "auto",
+                    postalCode: "auto"
+                  }
+                }
+              }
+            }}
+          />
+        </div>
+
+        {/* Security Notice */}
+        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-4 rounded-xl">
+          <div className="flex items-start gap-3">
+            <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <div className="font-semibold text-green-800 dark:text-green-200 mb-1">安全な決済</div>
+              <div className="text-sm text-green-700 dark:text-green-300">
+                お客様の個人情報やカード情報は、業界標準のSSL暗号化により完全に保護されています。
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-xl">
+            <div className="flex items-start gap-3">
+              <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <div className="font-semibold text-red-800 dark:text-red-200 mb-1">お支払いエラー</div>
+                <div className="text-sm text-red-700 dark:text-red-300">{error}</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 pt-4">
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex-1 px-6 py-3 bg-[var(--muted)] hover:bg-[var(--muted)]/80 text-[var(--foreground)] font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md"
+          >
+            戻る
+          </button>
+          <button
+            className="flex-1 px-6 py-3 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] hover:from-[#2563eb] hover:to-[#3b82f6] text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
+            type="submit"
+            disabled={loading || !stripe || !elements}
+          >
+            {loading ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                処理中...
+              </div>
+            ) : (
+              "お支払いを確定する"
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }
 
@@ -1585,13 +1660,12 @@ export default function BookLessonPage() {
                       {/* Coupon Section - Only show if not using free trial */}
                       {!isFreeTrialActive && (
                         <div>
-                          <label className="block text-[var(--foreground)] font-semibold mb-3">クーポンコード（任意）</label>
                           <div className="flex flex-col sm:flex-row gap-3">
                             <input
                               type="text"
                               value={coupon}
                               onChange={(e) => setCoupon(e.target.value)}
-                              placeholder="クーポンコードを入力"
+                              placeholder="クーポンコードを入力（任意）"
                               className="flex-1 px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
                             />
                             <button
@@ -1808,7 +1882,7 @@ export default function BookLessonPage() {
                   </div>
 
                   {/* Action Buttons - Full Width */}
-                  <div className={`flex flex-col sm:flex-row gap-4 ${finalPrice === 0 ? 'mx-auto max-w-md' : ''}`}>
+                  <div className={`flex flex-col pt-2 sm:flex-row gap-4 ${finalPrice === 0 ? 'mx-auto max-w-md' : ''}`}>
                     <button
                       type="button"
                       onClick={() => setSubstep(2)}
@@ -1845,10 +1919,9 @@ export default function BookLessonPage() {
           )}
           {step === 2 && clientSecret && (
             <div
-              className="bg-[var(--card)] border border-[var(--border)] p-8 rounded-2xl shadow-lg w-full flex flex-col gap-6 max-w-lg mx-auto min-h-0 min-w-0 max-h-[90vh] overflow-y-auto justify-center hover:shadow-xl transition-all duration-300"
+              className="bg-[var(--card)] border border-[var(--border)] p-6 lg:p-8 rounded-2xl shadow-lg w-full max-w-2xl mx-auto hover:shadow-xl transition-all duration-300"
               id="payment-form-container"
               ref={paymentFormRef}
-              style={{ marginTop: 'auto', marginBottom: 'auto' }}
             >
               <Elements
                 stripe={stripePromise}
@@ -1870,14 +1943,25 @@ export default function BookLessonPage() {
                       '.Tab': {
                         display: 'block !important',
                         visibility: 'visible !important',
+                        border: `1px solid ${resolvedTheme === 'dark' ? '#374151' : '#d1d5db'}`,
+                        borderRadius: '8px',
+                        padding: '12px 16px',
+                        margin: '8px 0',
+                        background: resolvedTheme === 'dark' ? '#1f2937' : '#ffffff',
                       },
                       '.TabContainer': {
                         display: 'flex !important',
                         visibility: 'visible !important',
+                        flexDirection: 'column',
+                        gap: '8px',
                       },
                       '.PaymentMethodSelector': {
                         display: 'block !important',
                         visibility: 'visible !important',
+                        background: resolvedTheme === 'dark' ? '#111827' : '#f9fafb',
+                        border: `1px solid ${resolvedTheme === 'dark' ? '#374151' : '#e5e7eb'}`,
+                        borderRadius: '8px',
+                        padding: '16px',
                       }
                     }
                   },

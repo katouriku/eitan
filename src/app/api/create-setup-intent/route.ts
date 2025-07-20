@@ -45,7 +45,7 @@ export async function POST(req: Request) {
 
     // Update user profile with stripe customer ID
     await supabase
-      .from('profiles')
+      .from('user_profiles')
       .upsert({
         id: userId,
         stripe_customer_id: stripeCustomerId,

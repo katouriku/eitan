@@ -65,7 +65,7 @@ export async function POST(req: Request) {
     let stripeCustomerId: string | undefined;
     if (userId) {
       const { data: profile } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .select('stripe_customer_id')
         .eq('id', userId)
         .single();

@@ -55,20 +55,30 @@ export default function ProfilePage() {
     if (!user) return;
 
     try {
-      // Load user profile from database
-      const { data: profileData, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (profileError && profileError.code !== 'PGRST116') { // PGRST116 is "not found"
-        console.error('Error loading profile:', profileError);
-      } else if (profileData) {
-        // Override with database values if they exist
-        setFullName(profileData.full_name || user.user_metadata?.full_name || '');
-        setFullNameKana(profileData.full_name_kana || user.user_metadata?.full_name_kana || '');
-        setPreferredLocation(profileData.preferred_location || user.user_metadata?.preferred_location || '');
+      // Load user profile from API
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
+      if (token) {
+        const profileResponse = await fetch('/api/profile', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (profileResponse.ok) {
+          const profileResult = await profileResponse.json();
+          if (profileResult.success && profileResult.data) {
+            const profileData = profileResult.data;
+            setFullName(profileData.full_name || user.user_metadata?.full_name || '');
+            setFullNameKana(profileData.full_name_kana || user.user_metadata?.full_name_kana || '');
+            setPreferredLocation(profileData.preferred_location || user.user_metadata?.preferred_location || '');
+          }
+        } else {
+          console.warn('Failed to load profile from API, using metadata fallback');
+        }
+      } else {
+        console.warn('No session token available, using metadata fallback');
       }
 
       // Load students
@@ -84,23 +94,25 @@ export default function ProfilePage() {
         setStudents(studentsData || []);
       }
 
-      // Load lessons (bookings)
-      const { data: lessonsData, error: lessonsError } = await supabase
+      // Load lesson history from bookings table
+      const { data: bookingsData, error: bookingsError } = await supabase
         .from('bookings')
         .select('*')
-        .eq('customer_email', user.email)
+        .eq('email', user.email)
         .order('date', { ascending: false });
 
-      if (lessonsError) {
-        console.error('Error loading lessons:', lessonsError);
+      if (bookingsError) {
+        console.error('Error loading lesson history:', bookingsError);
+        console.error('Bookings query error details:', JSON.stringify(bookingsError));
       } else {
-        // Transform booking data to lesson format
-        const transformedLessons: Lesson[] = (lessonsData || []).map((booking) => {
-          const bookingDate = new Date(booking.date);
+        // Transform booking data to match expected lesson format
+        const transformedLessons: Lesson[] = (bookingsData || []).map((booking) => {
+          const lessonDate = new Date(booking.date);
           const now = new Date();
           let status: 'upcoming' | 'completed' | 'cancelled' = 'upcoming';
           
-          if (bookingDate < now) {
+          // Since there's no status field, determine based on date
+          if (lessonDate < now) {
             status = 'completed';
           }
           
@@ -144,22 +156,35 @@ export default function ProfilePage() {
     setShowProfileSuccess(false);
 
     try {
-      // First, upsert to user_profiles table in the database
-      const { error: dbError } = await supabase
-        .from('user_profiles')
-        .upsert(
-          {
-            user_id: user.id,
-            full_name: fullName,
-            full_name_kana: fullNameKana,
-            preferred_location: preferredLocation,
-          },
-          { onConflict: 'user_id' }
-        );
-
-      if (dbError) {
-        throw new Error('Failed to update profile in database');
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
+      if (!token) {
+        throw new Error('Authentication required');
       }
+
+      // Call our profile API endpoint
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          full_name: fullName,
+          full_name_kana: fullNameKana,
+          preferred_location: preferredLocation,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to update profile');
+      }
+
+      console.log('Profile update successful:', result.data);
 
       // Also update user metadata as backup
       const { error: authError } = await supabase.auth.updateUser({
@@ -179,8 +204,9 @@ export default function ProfilePage() {
       // Hide the checkmark after 3 seconds
       setTimeout(() => setShowProfileSuccess(false), 3000);
     } catch (err) {
-      setError('エラーが発生しました。もう一度お試しください。');
       console.error('Profile update error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      setError(`プロフィールの更新に失敗しました: ${errorMessage}`);
     } finally {
       setLoading(false);
     }

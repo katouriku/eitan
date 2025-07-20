@@ -38,6 +38,26 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
+    // Create corresponding user_profiles record
+    if (data.user) {
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .insert({
+          id: data.user.id,
+          email: data.user.email,
+          full_name,
+          full_name_kana,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        // Don't fail the entire signup if profile creation fails
+        // The user can still be created in auth.users
+      }
+    }
+
     return NextResponse.json({ 
       user: data.user,
       message: 'Account created successfully' 

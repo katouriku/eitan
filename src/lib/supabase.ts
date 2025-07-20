@@ -99,6 +99,79 @@ export class BookingService {
       throw new Error(`Time slot is already booked. Please choose a different time.`)
     }
     
+    // First, try to create or find user account
+    let userId: string | null = null
+    
+    try {
+      // Check if user already exists by email in user_profiles table first (more reliable)
+      const { data: existingProfile } = await supabaseAdmin
+        .from('user_profiles')
+        .select('id')
+        .eq('email', bookingData.email)
+        .single()
+      
+      if (existingProfile) {
+        userId = existingProfile.id
+        console.log('Found existing user profile:', userId)
+      } else {
+        // Create new user account
+        const { data: newUserData, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
+          email: bookingData.email,
+          user_metadata: {
+            full_name: bookingData.name,
+            full_name_kana: bookingData.kana
+          },
+          email_confirm: true // Auto-confirm email for booking users
+        })
+        
+        if (createUserError) {
+          console.error('Error creating user:', createUserError)
+          // Continue with booking even if user creation fails
+        } else if (newUserData.user) {
+          userId = newUserData.user.id
+          console.log('Created new user:', userId)
+          
+          // Create corresponding user_profiles record
+          const { error: profileError } = await supabaseAdmin
+            .from('user_profiles')
+            .insert({
+              id: userId,
+              email: bookingData.email,
+              full_name: bookingData.name,
+              full_name_kana: bookingData.kana,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+          
+          if (profileError) {
+            console.error('Error creating user profile:', profileError)
+          }
+          
+          // If there's student information and it's not the booker themselves, create student record
+          if (!bookingData.is_student_booker && bookingData.student_name) {
+            const { error: studentError } = await supabaseAdmin
+              .from('students')
+              .insert({
+                parent_id: userId,
+                name: bookingData.student_name,
+                age: bookingData.student_age || '',
+                grade_level: bookingData.student_grade || '',
+                english_ability: bookingData.student_english_level || '',
+                notes: bookingData.student_notes || ''
+              })
+            
+            if (studentError) {
+              console.error('Error creating student record:', studentError)
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error handling user creation:', error)
+      // Continue with booking creation even if user handling fails
+    }
+    
+    // Create the booking record
     const { data, error } = await supabaseAdmin
       .from('bookings')
       .insert(bookingData)
