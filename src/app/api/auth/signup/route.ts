@@ -12,7 +12,21 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password, full_name, full_name_kana } = await req.json();
+    const { 
+      email, 
+      password, 
+      full_name, 
+      full_name_kana,
+      // Student information (optional)
+      isStudentBooker,
+      studentName,
+      studentAge,
+      studentGrade,
+      studentEnglishLevel,
+      studentNotes,
+      // Flag to auto-confirm user (for booking flow)
+      autoConfirm = false
+    } = await req.json();
 
     if (!email || !password || !full_name) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -22,7 +36,7 @@ export async function POST(req: NextRequest) {
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
-      email_confirm: true, // Auto-confirm email for booking flow
+      email_confirm: autoConfirm, // Auto-confirm for booking flow, require confirmation for regular signup
       user_metadata: {
         full_name,
         full_name_kana,
@@ -34,12 +48,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ 
         error: error.message.includes('already registered') 
           ? 'このメールアドレスは既に登録されています。' 
-          : 'アカウント作成に失敗しました。' 
+          : 'アカウント作成に失敗しました。',
+        details: error.message
       }, { status: 400 });
     }
 
-    // Create corresponding user_profiles record
+    console.log('User created successfully:', data.user?.email, 'confirmed:', data.user?.email_confirmed_at ? 'yes' : 'no');
+
     if (data.user) {
+      // Create corresponding user_profiles record
       const { error: profileError } = await supabase
         .from('user_profiles')
         .insert({
@@ -53,14 +70,31 @@ export async function POST(req: NextRequest) {
 
       if (profileError) {
         console.error('Profile creation error:', profileError);
-        // Don't fail the entire signup if profile creation fails
-        // The user can still be created in auth.users
+      }
+
+      // Create student record if student information is provided
+      if (!isStudentBooker && studentName) {
+        const { error: studentError } = await supabase
+          .from('students')
+          .insert({
+            parent_id: data.user.id,
+            name: studentName,
+            age: studentAge || '',
+            grade_level: studentGrade || '',
+            english_ability: studentEnglishLevel || '',
+            notes: studentNotes || ''
+          });
+
+        if (studentError) {
+          console.error('Student creation error:', studentError);
+        }
       }
     }
 
     return NextResponse.json({ 
       user: data.user,
-      message: 'Account created successfully' 
+      message: 'アカウント登録成功',
+      confirmed: data.user?.email_confirmed_at ? true : false
     });
 
   } catch (err) {

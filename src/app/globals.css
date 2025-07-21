@@ -418,3 +418,13 @@ input:focus, select:focus, textarea:focus {
   min-height: 40px !important;
   padding: 8px 16px !important;
 }
+
+/* Mobile scrollbar hiding for better touch UX */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}

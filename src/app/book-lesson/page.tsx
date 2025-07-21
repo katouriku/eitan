@@ -59,84 +59,117 @@ function StripePaymentForm({ onSuccess, onError, onBack }: { clientSecret: strin
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header Section */}
-      <div className="text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-[#3881ff] to-[#5a9eff] rounded-full mb-4 shadow-md">
-          <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-          </svg>
-        </div>
-        <h3 className="text-2xl text-[var(--foreground)] font-bold mb-2">お支払い情報</h3>
-        <p className="text-[var(--muted-foreground)]">
-          安全な決済システムでお支払いを完了してください
-        </p>
-      </div>
-
-      <form id="stripe-payment-form" onSubmit={handleSubmit} className="space-y-6">
-        {/* Payment Element Container */}
-        <div className="bg-[var(--muted)]/20 p-6 rounded-xl border border-[var(--border)]">
-          <PaymentElement
-            options={{
-              layout: {
-                type: "tabs",
-                defaultCollapsed: false,
-              },
-              fields: {
-                billingDetails: {
-                  name: "auto",
-                  email: "auto",
-                  phone: "auto",
-                  address: {
-                    country: "auto",
-                    line1: "auto",
-                    line2: "auto",
-                    city: "auto",
-                    state: "auto",
-                    postalCode: "auto"
-                  }
-                }
-              }
-            }}
-          />
-        </div>
-
+    <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+      {/* Left Column - Security Info (Desktop) */}
+      <div className="lg:w-80 lg:flex-shrink-0 order-2 lg:order-1">
         {/* Security Notice */}
-        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-4 rounded-xl">
-          <div className="flex items-start gap-3">
-            <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-blue-50 light:bg-blue-100 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-6 rounded-xl">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
             <div className="flex-1">
-              <div className="font-semibold text-green-800 dark:text-green-200 mb-1">安全な決済</div>
-              <div className="text-sm text-green-700 dark:text-green-300">
+              <div className="font-bold text-blue-900 dark:text-blue-200 text-lg mb-2">安全な決済</div>
+              <div className="text-sm text-blue-800 dark:text-blue-300 leading-relaxed">
                 お客様の個人情報やカード情報は、業界標準のSSL暗号化により完全に保護されています。
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Error Display */}
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-xl">
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+          
+          {/* Security features list */}
+          <div className="space-y-3 mt-4">
+            <div className="flex items-center gap-3">
+              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <div className="flex-1">
-                <div className="font-semibold text-red-800 dark:text-red-200 mb-1">お支払いエラー</div>
-                <div className="text-sm text-red-700 dark:text-red-300">{error}</div>
+              <span className="text-sm text-blue-800 dark:text-blue-300 font-medium">256ビット暗号化</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
               </div>
+              <span className="text-sm text-blue-800 dark:text-blue-300 font-medium">PCI DSS準拠</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <span className="text-sm text-blue-800 dark:text-blue-300 font-medium">Stripe社提供</span>
             </div>
           </div>
-        )}
+        </div>
+      </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 pt-4">
+      {/* Right Column - Payment Form */}
+      <div className="flex-1 order-1 lg:order-2">
+        {/* Header Section */}
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-[#3881ff] to-[#5a9eff] rounded-full mb-4 shadow-md">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            </svg>
+          </div>
+          <h3 className="text-2xl text-[var(--foreground)] font-bold mb-2">お支払い情報</h3>
+          <p className="text-[var(--muted-foreground)]">
+            安全な決済システムでお支払いを完了してください
+          </p>
+        </div>
+
+        <form id="stripe-payment-form" onSubmit={handleSubmit} className="space-y-6">
+          {/* Payment Element Container */}
+          <div className="bg-[var(--muted)]/20 p-6 rounded-xl border border-[var(--border)]">
+            <PaymentElement
+              options={{
+                layout: {
+                  type: "tabs",
+                  defaultCollapsed: false,
+                },
+                fields: {
+                  billingDetails: {
+                    name: "auto",
+                    email: "auto",
+                    phone: "auto",
+                    address: {
+                      country: "auto",
+                      line1: "auto",
+                      line2: "auto",
+                      city: "auto",
+                      state: "auto",
+                      postalCode: "auto"
+                    }
+                  }
+                }
+              }}
+            />
+          </div>
+
+          {/* Error Display */}
+          {error && (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-xl">
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <div className="font-semibold text-red-800 dark:text-red-200 mb-1">お支払いエラー</div>
+                  <div className="text-sm text-red-700 dark:text-red-300">{error}</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 pt-4">
           <button
             type="button"
             onClick={onBack}
@@ -159,7 +192,8 @@ function StripePaymentForm({ onSuccess, onError, onBack }: { clientSecret: strin
             )}
           </button>
         </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }
@@ -661,6 +695,23 @@ export default function BookLessonPage() {
         return;
       }
 
+      // If booking is free, skip payment step entirely
+      if (finalPrice === 0 || (isFreeTrialActive && couponConfirmed)) {
+        const emailSent = await sendBookingEmail({
+          name: nameValue,
+          email: emailValue,
+          kana: kanaValue,
+          date: bookingDateTime,
+          duration: 60,
+          details: `レッスン種別: ${lessonType}, 参加者数: ${participants}${isFreeTrialActive ? ' (無料体験)' : ''}`
+        });
+        if (emailSent) {
+          await refreshBookedSlots(); // Refresh the UI
+          setStep(3);
+        }
+        return;
+      }
+
       const res = await fetch("/api/create-payment-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -909,8 +960,8 @@ export default function BookLessonPage() {
         progressBarContainer
       )}
       
-      {/* Always render sidebar in fixed container using portal - desktop only */}
-      {sidebarContainer && createPortal(
+      {/* Always render sidebar in fixed container using portal - desktop only, hidden during payment */}
+      {sidebarContainer && !(step === 1 && substep === 3) && createPortal(
         <BookingSidebar />,
         sidebarContainer
       )}
@@ -943,7 +994,7 @@ export default function BookLessonPage() {
                       💻
                     </div>
                     <div className="text-xl font-bold text-[var(--foreground)] mb-2">オンラインレッスン</div>
-                    <div className="text-sm text-[var(--muted-foreground)] mb-4">Discord</div>
+                    <div className="text-sm text-[var(--muted-foreground)] mb-4">Discordで</div>
                     <div className="text-[#3881ff] font-bold text-lg">
                       {isFreeTrialActive ? (
                         <div className="flex items-center justify-center gap-2">
@@ -1229,7 +1280,10 @@ export default function BookLessonPage() {
                         setFormError(null);
                         
                         try {
-                          const result = await fetch('/api/auth/signup', {
+                          // Use the admin signup API route for auto-confirmation
+                          console.log('Creating account using admin signup with auto-confirm...');
+                          
+                          const signupResponse = await fetch('/api/auth/signup', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -1237,24 +1291,58 @@ export default function BookLessonPage() {
                               password: password,
                               full_name: customerName,
                               full_name_kana: customerKana,
+                              autoConfirm: true
                             })
                           });
                           
-                          const data = await result.json();
+                          const signupResult = await signupResponse.json();
                           
-                          if (result.ok) {
-                            // Account created successfully, now sign them in
-                            const { error: signInError } = await signIn(customerEmail, password);
-                            
-                            if (!signInError) {
-                              // Successfully signed in, proceed to next step
-                              setSubstep(2);
-                            } else {
-                              setFormError('アカウントは作成されましたが、ログインに失敗しました。手動でログインしてください。');
-                            }
-                          } else {
-                            setFormError(data.error || 'アカウント作成に失敗しました。');
+                          if (!signupResponse.ok || signupResult.error) {
+                            console.error('Signup error:', signupResult.error);
+                            setFormError(`アカウント作成に失敗しました: ${signupResult.error}`);
+                            setFormLoading(false);
+                            return;
                           }
+                          
+                          console.log('Account created successfully, now signing in...');
+                          
+                          // Now sign in the user
+                          const { error: signInError } = await signIn(customerEmail, password);
+                          
+                          if (signInError) {
+                            console.error('Sign in after signup failed:', signInError);
+                            setFormError('アカウントは作成されましたが、ログインに失敗しました。手動でログインしてください。');
+                            setFormLoading(false);
+                            return;
+                          }
+                          
+                          console.log('Successfully signed in after account creation');
+                          
+                          // Create student record if needed using the API
+                          if (!isStudentBooker && studentName) {
+                            try {
+                              const studentResult = await fetch('/api/students', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  studentName,
+                                  studentAge,
+                                  studentGrade,
+                                  studentEnglishLevel,
+                                  studentNotes
+                                })
+                              });
+                              
+                              if (!studentResult.ok) {
+                                console.error('Failed to create student record');
+                              }
+                            } catch (err) {
+                              console.error('Error creating student record:', err);
+                            }
+                          }
+                          
+                          // Proceed to next step
+                          setSubstep(2);
                         } catch (error) {
                           console.error('Account creation error:', error);
                           setFormError('アカウント作成中にエラーが発生しました。');
@@ -1630,7 +1718,7 @@ export default function BookLessonPage() {
                   </div>
                   
                   {/* Mobile-first single column layout, desktop switches to two columns */}
-                  <div className={`flex flex-col gap-6 lg:gap-8 ${finalPrice !== 0 ? 'lg:grid lg:grid-cols-2' : ''}`}>
+                  <div className={`flex flex-col gap-4 ${finalPrice !== 0 ? 'lg:grid lg:grid-cols-2' : ''}`}>
                     
                     {/* Left Column - Summary & Coupon */}
                     <div className="space-y-6">
@@ -1660,7 +1748,7 @@ export default function BookLessonPage() {
                       {/* Coupon Section - Only show if not using free trial */}
                       {!isFreeTrialActive && (
                         <div>
-                          <div className="flex flex-col sm:flex-row gap-3">
+                          <div className="flex flex-col sm:flex-row gap-3 -mt-1 mb-2">
                             <input
                               type="text"
                               value={coupon}
@@ -1768,7 +1856,7 @@ export default function BookLessonPage() {
                       {/* Payment Method Selection - Only show if not free */}
                       {finalPrice !== 0 && (savedPaymentMethods.length === 0 || !selectedPaymentMethodId) && (
                         <div>
-                          <label className="block text-[var(--foreground)] font-semibold mb-4 text-center lg:text-left">お支払い方法を選択</label>
+                          <label className="block text-[var(--foreground)] font-semibold mb-1 text-center lg:text-left">お支払い方法を選択</label>
                           <div className="grid grid-cols-1 gap-4">
                             <button
                               type="button"
@@ -1801,7 +1889,7 @@ export default function BookLessonPage() {
                                     Visa, MasterCard, JCB
                                     {savedPaymentMethods.length === 0 && user && (
                                       <div className="text-green-600 dark:text-green-400">
-                                        • カード情報を保存して次回簡単決済
+                                        カード情報を保存して次回簡単決済
                                       </div>
                                     )}
                                   </div>

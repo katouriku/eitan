@@ -34,10 +34,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Get initial session
     const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
+        setUser(session?.user ?? null);
+      } catch (error) {
+        console.error('Error getting session:', error);
+        setSession(null);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
     };
 
     getInitialSession();
@@ -45,8 +52,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+        console.log('Auth state change:', event, session?.user?.email);
+        
+        // Handle different auth events
+        if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setUser(null);
+        } else if (event === 'SIGNED_IN') {
+          setSession(session);
+          setUser(session?.user ?? null);
+        } else if (event === 'TOKEN_REFRESHED') {
+          console.log('Token refreshed successfully');
+          setSession(session);
+          setUser(session?.user ?? null);
+        } else if (event === 'USER_UPDATED') {
+          setSession(session);
+          setUser(session?.user ?? null);
+        } else {
+          setSession(session);
+          setUser(session?.user ?? null);
+        }
         setLoading(false);
       }
     );
@@ -69,9 +94,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error };
       }
       
-      // If user was created successfully, also create user_profiles record
+      // Check if user needs email confirmation
+      if (data.user && !data.session) {
+        // User was created but needs email confirmation
+        return { 
+          error: null, 
+          message: 'Please check your email and click the confirmation link to verify your account.' 
+        };
+      }
+      
+      // If user was created and immediately signed in (confirmed), create user_profiles record
       if (data.user && data.session) {
-        // User is immediately confirmed, create profile
         try {
           const { error: profileError } = await supabase
             .from('user_profiles')
@@ -94,14 +127,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
       
-      // Check if user needs email confirmation
-      if (data.user && !data.session) {
-        return { 
-          error: null, 
-          message: 'Please check your email and click the confirmation link to verify your account.' 
-        };
-      }
-      
       return { error: null };
     } catch (error) {
       return { error: error as AuthError };
@@ -110,12 +135,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('Attempting to sign in user:', email);
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
+      
+      if (error) {
+        console.error('Sign in error:', error);
+      } else {
+        console.log('Sign in successful:', data.user?.email);
+      }
+      
       return { error };
     } catch (error) {
+      console.error('Sign in exception:', error);
       return { error: error as AuthError };
     }
   };

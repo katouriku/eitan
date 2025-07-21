@@ -48,7 +48,7 @@ export default function Header({ homepage, nav, menuOpen, setMenuOpen }: HeaderP
       <header className="w-full px-4 sm:px-6 py-3 bg-[var(--background)]/90 backdrop-blur-sm fixed top-0 left-0 right-0 z-40 border-b border-[var(--border)]">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex-shrink-0">
+          <Link href="/" className="flex-shrink-0 z-10">
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-[#3881ff] hover:text-[#5a9eff] transition-colors"
                 style={{textShadow:'0 2px 12px rgba(56,129,255,0.20)'}}>
               {homepage.mainTitle}
@@ -56,26 +56,28 @@ export default function Header({ homepage, nav, menuOpen, setMenuOpen }: HeaderP
           </Link>
 
           {/* Desktop Navigation - Center */}
-          <nav className="hidden lg:flex items-center gap-2 xl:gap-3 absolute left-1/2 transform -translate-x-1/2">
+          <nav className="hidden lg:flex items-center gap-1 xl:gap-2 absolute left-1/2 transform -translate-x-1/2 z-10">
             {nav.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
-                className="px-4 xl:px-5 py-2.5 rounded-xl font-medium text-sm xl:text-base text-[var(--muted-foreground)] bg-[var(--muted)]/50 border border-[var(--border)] hover:text-[var(--foreground)] hover:bg-[#3881ff]/90 hover:border-[#3881ff] hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-[#3881ff]/30"
+                className="relative px-4 xl:px-5 py-2.5 rounded-xl font-medium text-sm xl:text-base text-[var(--foreground)] hover:text-[#3881ff] hover:bg-[var(--muted)]/40 transition-all duration-300 group"
               >
-                {item.label}
+                <span className="relative z-10">{item.label}</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-[#3881ff]/5 to-[#5a9eff]/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] rounded-full group-hover:w-4/5 transition-all duration-300"></div>
               </Link>
             ))}
           </nav>
             
           {/* Auth Section - Right */}
-          <div className="hidden lg:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-3 flex-shrink-0 z-20">
             {user ? (
               <UserProfilePicture showDropdown={true} />
             ) : (
               <button
                 onClick={() => setAuthModalOpen(true)}
-                className="px-4 xl:px-5 py-2.5 rounded-xl font-medium text-sm xl:text-base text-white bg-gradient-to-r from-[#3881ff] to-[#5a9eff] hover:from-[#2563eb] hover:to-[#3b82f6] border border-[#3881ff]/50 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-[#3881ff]/30"
+                className="relative px-5 xl:px-6 py-2.5 rounded-xl font-semibold text-sm xl:text-base text-white bg-gradient-to-r from-[#3881ff] to-[#5a9eff] hover:from-[#2563eb] hover:to-[#3b82f6] transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-[#3881ff]/40 hover:-translate-y-0.5 transform"
               >
                 ログイン
               </button>
@@ -84,7 +86,7 @@ export default function Header({ homepage, nav, menuOpen, setMenuOpen }: HeaderP
 
           {/* Mobile Menu Button */}
           <button
-            className="lg:hidden p-2 rounded-lg hover:bg-[var(--muted)] transition-colors"
+            className="lg:hidden p-2 rounded-lg hover:bg-[var(--muted)] transition-colors flex-shrink-0 z-20"
             aria-label="Toggle menu"
             onClick={() => setMenuOpen(!menuOpen)}
             type="button"
@@ -114,10 +116,11 @@ export default function Header({ homepage, nav, menuOpen, setMenuOpen }: HeaderP
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="px-4 py-3 rounded-xl font-medium text-[var(--muted-foreground)] bg-[var(--muted)]/50 border border-[var(--border)] hover:text-[var(--foreground)] hover:bg-[#3881ff]/90 hover:border-[#3881ff] transition-all duration-300"
+                  className="relative px-4 py-3 rounded-xl font-medium text-[var(--foreground)] hover:text-[#3881ff] hover:bg-[var(--muted)]/40 transition-all duration-300 group"
                   onClick={() => setMenuOpen(false)}
                 >
-                  {item.label}
+                  <span className="relative z-10">{item.label}</span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#3881ff]/10 to-[#5a9eff]/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </Link>
               ))}
               
@@ -151,7 +154,7 @@ export default function Header({ homepage, nav, menuOpen, setMenuOpen }: HeaderP
                     setAuthModalOpen(true);
                     setMenuOpen(false);
                   }}
-                  className="mt-4 w-full px-4 py-3 rounded-xl font-medium text-white bg-gradient-to-r from-[#3881ff] to-[#5a9eff] hover:from-[#2563eb] hover:to-[#3b82f6] transition-all duration-300"
+                  className="mt-4 w-full px-4 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-[#3881ff] to-[#5a9eff] hover:from-[#2563eb] hover:to-[#3b82f6] transition-all duration-300 shadow-md hover:shadow-lg"
                 >
                   ログイン
                 </button>

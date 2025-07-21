@@ -354,19 +354,30 @@ export default function ProfilePage() {
         <div className="bg-[var(--card)] rounded-2xl border border-[var(--border)] shadow-xl overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-[#3881ff] to-[#5a9eff] p-6 text-white">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-center gap-4">
                 <UserProfilePicture size="lg" />
-                <div>
+                <div className="flex-1">
                   <h1 className="text-2xl font-bold">
                     {user.user_metadata?.full_name || 'ユーザー'}
                   </h1>
                   <p className="opacity-90">{user.email}</p>
+                  {/* Mobile logout button - below email */}
+                  <button
+                    onClick={handleSignOut}
+                    className="sm:hidden flex items-center gap-2 mt-3 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    ログアウト
+                  </button>
                 </div>
               </div>
+              {/* Desktop logout button */}
               <button
                 onClick={handleSignOut}
-                className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors flex-shrink-0"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -378,110 +389,94 @@ export default function ProfilePage() {
 
           {/* Navigation Tabs */}
           <div className="border-b border-[var(--border)]">
-            <nav className="flex">
+            <nav className="flex overflow-x-auto scrollbar-hide">
               <button
                 onClick={() => setActiveTab('profile')}
-                className={`px-6 py-4 font-medium transition-colors ${
+                className={`flex-shrink-0 px-3 sm:px-6 py-3 sm:py-4 font-medium transition-colors min-w-0 ${
                   activeTab === 'profile'
                     ? 'text-[#3881ff] border-b-2 border-[#3881ff]'
                     : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                  プロフィール
+                  <span className="text-sm sm:text-base whitespace-nowrap">プロフィール</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveTab('security')}
-                className={`px-6 py-4 font-medium transition-colors ${
+                className={`flex-shrink-0 px-3 sm:px-6 py-3 sm:py-4 font-medium transition-colors min-w-0 ${
                   activeTab === 'security'
                     ? 'text-[#3881ff] border-b-2 border-[#3881ff]'
                     : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
-                  セキュリティ
+                  <span className="text-sm sm:text-base whitespace-nowrap">セキュリティ</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveTab('students')}
-                className={`px-6 py-4 font-medium transition-colors ${
+                className={`flex-shrink-0 px-3 sm:px-6 py-3 sm:py-4 font-medium transition-colors min-w-0 ${
                   activeTab === 'students'
                     ? 'text-[#3881ff] border-b-2 border-[#3881ff]'
                     : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                   </svg>
-                  生徒管理
+                  <span className="text-sm sm:text-base whitespace-nowrap">生徒管理</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveTab('lessons')}
-                className={`px-6 py-4 font-medium transition-colors ${
+                className={`flex-shrink-0 px-3 sm:px-6 py-3 sm:py-4 font-medium transition-colors min-w-0 ${
                   activeTab === 'lessons'
                     ? 'text-[#3881ff] border-b-2 border-[#3881ff]'
                     : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  レッスン履歴
+                  <span className="text-sm sm:text-base whitespace-nowrap">レッスン履歴</span>
                 </div>
               </button>
             </nav>
           </div>
 
           {/* Content */}
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {/* Messages */}
             {error && (
-              <div className="mb-6 p-3 rounded-xl text-sm bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800">
+              <div className="mb-4 sm:mb-6 p-3 rounded-xl text-sm bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800">
                 {error}
               </div>
             )}
 
             {message && !showProfileSuccess && (
-              <div className="mb-6 p-3 rounded-xl text-sm bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800">
+              <div className="mb-4 sm:mb-6 p-3 rounded-xl text-sm bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800">
                 {message}
               </div>
             )}
 
             {/* Profile Tab */}
             {activeTab === 'profile' && (
-              <div className="space-y-8">
-                <form onSubmit={handleUpdateProfile} className="space-y-6">
-                  <h2 className="text-xl font-semibold text-[var(--foreground)] mb-4">
+              <div className="space-y-6 sm:space-y-8">
+                <form onSubmit={handleUpdateProfile} className="space-y-4 sm:space-y-6">
+                  <h2 className="text-lg sm:text-xl font-semibold text-[var(--foreground)] mb-3 sm:mb-4">
                     基本情報
                   </h2>
                   
-                  <div className="grid gap-6">
-                    <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-[var(--foreground)] mb-2">
-                        メールアドレス
-                      </label>
-                      <input
-                        id="email"
-                        type="email"
-                        value={user.email || ''}
-                        disabled
-                        className="w-full px-4 py-3 mb-2 rounded-xl bg-[var(--muted)] border border-[var(--border)] text-[var(--muted-foreground)] cursor-not-allowed"
-                      />
-                      <p className="text-xs text-[var(--muted-foreground)]">
-                        メールアドレスは変更できません
-                      </p>
-                    </div>
-
+                  <div className="grid gap-4 sm:gap-6">
                     <div>
                       <label htmlFor="fullName" className="block text-sm font-medium text-[var(--foreground)] mb-2">
                         氏名
@@ -526,17 +521,17 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                     <button
                       type="submit"
                       disabled={loading}
-                      className="px-6 py-3 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] hover:from-[#2563eb] hover:to-[#3b82f6] text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] hover:from-[#2563eb] hover:to-[#3b82f6] text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {loading ? '更新中...' : 'プロフィールを更新'}
                     </button>
                     
                     {showProfileSuccess && (
-                      <div className="flex items-center gap-2 text-green-600 dark:text-green-400 animate-in fade-in duration-300">
+                      <div className="flex items-center justify-center sm:justify-start gap-2 text-green-600 dark:text-green-400 animate-in fade-in duration-300">
                         <div className="w-6 h-6 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
@@ -552,13 +547,13 @@ export default function ProfilePage() {
 
             {/* Security Tab */}
             {activeTab === 'security' && (
-              <div className="space-y-8">
-                <form onSubmit={handleUpdatePassword} className="space-y-6">
-                  <h2 className="text-xl font-semibold text-[var(--foreground)] mb-4">
+              <div className="space-y-6 sm:space-y-8">
+                <form onSubmit={handleUpdatePassword} className="space-y-4 sm:space-y-6">
+                  <h2 className="text-lg sm:text-xl font-semibold text-[var(--foreground)] mb-3 sm:mb-4">
                     パスワード変更
                   </h2>
                   
-                  <div className="space-y-6">
+                  <div className="space-y-4 sm:space-y-6">
                     <div>
                       <label htmlFor="newPassword" className="block text-sm font-medium text-[var(--foreground)] mb-2">
                         新しいパスワード
@@ -593,7 +588,7 @@ export default function ProfilePage() {
                   <button
                     type="submit"
                     disabled={loading || !newPassword || !confirmPassword}
-                    className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? 'パスワード変更中...' : 'パスワードを変更'}
                   </button>
@@ -603,10 +598,10 @@ export default function ProfilePage() {
 
             {/* Students Tab Content */}
             {activeTab === 'students' && (
-              <div className="p-8">
-                <div className="mb-8">
-                  <h2 className="text-2xl font-bold text-[var(--foreground)] mb-2">生徒管理</h2>
-                  <p className="text-[var(--muted-foreground)]">お子様の情報を管理できます。</p>
+              <div className="space-y-6 sm:space-y-8">
+                <div className="mb-6 sm:mb-8">
+                  <h2 className="text-lg sm:text-2xl font-bold text-[var(--foreground)] mb-2">生徒管理</h2>
+                  <p className="text-sm sm:text-base text-[var(--muted-foreground)]">お子様の情報を管理できます。</p>
                 </div>
 
                 {/* Add New Student Button */}
@@ -924,7 +919,6 @@ export default function ProfilePage() {
                               <div key={lesson.id} className="p-6 border border-blue-200 dark:border-blue-800 rounded-xl bg-blue-50 dark:bg-blue-900/10">
                                 <div className="flex justify-between items-start mb-4">
                                   <div className="flex items-center gap-3">
-                                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                                     <h4 className="text-lg font-semibold text-[var(--foreground)]">
                                       {lesson.lesson_type === 'online' ? 'オンライン' : '対面'}レッスン
                                     </h4>
@@ -980,7 +974,6 @@ export default function ProfilePage() {
                               <div key={lesson.id} className="p-6 border border-[var(--border)] rounded-xl bg-[var(--card)]">
                                 <div className="flex justify-between items-start mb-4">
                                   <div className="flex items-center gap-3">
-                                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                                     <h4 className="text-lg font-semibold text-[var(--foreground)]">
                                       {lesson.lesson_type === 'online' ? 'オンライン' : '対面'}レッスン
                                     </h4>
