@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { addStudentToSupabase } from "./supabaseStudent";
 import { createPortal } from "react-dom";
 import { loadStripe } from "@stripe/stripe-js/pure";
 import { Elements } from "@stripe/react-stripe-js";
@@ -1275,14 +1276,10 @@ export default function BookLessonPage() {
                           return;
                         }
 
-                        // Create account automatically
                         setFormLoading(true);
                         setFormError(null);
-                        
                         try {
                           // Use the admin signup API route for auto-confirmation
-                          console.log('Creating account using admin signup with auto-confirm...');
-                          
                           const signupResponse = await fetch('/api/auth/signup', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -1294,60 +1291,47 @@ export default function BookLessonPage() {
                               autoConfirm: true
                             })
                           });
-                          
                           const signupResult = await signupResponse.json();
-                          
-                          if (!signupResponse.ok || signupResult.error) {
-                            console.error('Signup error:', signupResult.error);
+                          console.log('Signup result:', signupResult);
+                          const userId = signupResult.user?.id || signupResult.user?.user?.id;
+                          if ((!userId) && signupResult.error) {
                             setFormError(`アカウント作成に失敗しました: ${signupResult.error}`);
                             setFormLoading(false);
                             return;
                           }
-                          
-                          console.log('Account created successfully, now signing in...');
-                          
+                          if (!userId) {
+                            setFormError('ユーザーIDの取得に失敗しました。');
+                            setFormLoading(false);
+                            return;
+                          }
                           // Now sign in the user
                           const { error: signInError } = await signIn(customerEmail, password);
-                          
                           if (signInError) {
-                            console.error('Sign in after signup failed:', signInError);
                             setFormError('アカウントは作成されましたが、ログインに失敗しました。手動でログインしてください。');
                             setFormLoading(false);
                             return;
                           }
-                          
-                          console.log('Successfully signed in after account creation');
-                          
-                          // Create student record if needed using the API
-                          if (!isStudentBooker && studentName) {
-                            try {
-                              const studentResult = await fetch('/api/students', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                  studentName,
-                                  studentAge,
-                                  studentGrade,
-                                  studentEnglishLevel,
-                                  studentNotes
-                                })
-                              });
-                              
-                              if (!studentResult.ok) {
-                                console.error('Failed to create student record');
-                              }
-                            } catch (err) {
-                              console.error('Error creating student record:', err);
-                            }
+                          // Wait for session to be established (optional: add a small delay or check user context)
+                          try {
+                            await addStudentToSupabase({
+                              userId,
+                              name: isStudentBooker ? customerName : studentName,
+                              age: isStudentBooker ? studentAge : studentAge,
+                              grade_level: isStudentBooker ? studentGrade : studentGrade,
+                              english_ability: isStudentBooker ? studentEnglishLevel : studentEnglishLevel,
+                              notes: isStudentBooker ? studentNotes : studentNotes
+                            });
+                          } catch (err) {
+                            console.error('Student insert error:', err);
+                            setFormError('生徒情報の保存に失敗しました。');
+                            setFormLoading(false);
+                            return;
                           }
-                          
-                          // Proceed to next step
                           setSubstep(2);
                         } catch (error) {
                           console.error('Account creation error:', error);
                           setFormError('アカウント作成中にエラーが発生しました。');
                         }
-                        
                         setFormLoading(false);
                       }}
                       disabled={!customerName || !customerEmail || !password || (!isStudentBooker && !studentName) || formLoading}

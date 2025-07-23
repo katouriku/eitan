@@ -26,7 +26,7 @@ interface Lesson {
 }
 
 export default function ProfilePage() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading: authLoading } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -44,6 +44,7 @@ export default function ProfilePage() {
     name: '',
     age: '',
     grade_level: '',
+
     english_ability: '',
     notes: ''
   });
@@ -134,19 +135,19 @@ export default function ProfilePage() {
   }, [user, supabase]);
 
   useEffect(() => {
-    if (!user) {
+    if (!authLoading && !user) {
       router.push('/');
       return;
     }
-    
-    // Load user profile data from metadata and from database
-    setFullName(user.user_metadata?.full_name || '');
-    setFullNameKana(user.user_metadata?.full_name_kana || '');
-    setPreferredLocation(user.user_metadata?.preferred_location || '');
-    
-    // Load user profile and students from database
-    loadUserProfileAndStudents();
-  }, [user, router, loadUserProfileAndStudents]);
+    if (user) {
+      // Load user profile data from metadata and from database
+      setFullName(user.user_metadata?.full_name || '');
+      setFullNameKana(user.user_metadata?.full_name_kana || '');
+      setPreferredLocation(user.user_metadata?.preferred_location || '');
+      // Load user profile and students from database
+      loadUserProfileAndStudents();
+    }
+  }, [user, authLoading, router, loadUserProfileAndStudents]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -266,11 +267,11 @@ export default function ProfilePage() {
           notes: newStudent.notes.trim()
         })
         .select()
-        .single();
 
       if (error) throw error;
 
-      setStudents([...students, data]);
+      setStudents([...(students || []), ...(data || [])]);
+      setShowStudentForm(false);
       setNewStudent({
         name: '',
         age: '',
@@ -278,22 +279,25 @@ export default function ProfilePage() {
         english_ability: '',
         notes: ''
       });
-      setShowStudentForm(false);
+      setMessage('生徒を追加しました。');
     } catch (err) {
       console.error('Error adding student:', err);
       alert('生徒の追加に失敗しました。');
     }
   };
 
+  // Update student function
   const updateStudent = async (studentId: string, updatedStudent: Student) => {
     if (!user) return;
-
     try {
       const { error } = await supabase
         .from('students')
         .update({
           name: updatedStudent.name.trim(),
           age: parseInt(updatedStudent.age.toString()),
+
+
+// Remove any stray code fragments below this point
           grade_level: updatedStudent.grade_level,
           english_ability: updatedStudent.english_ability,
           notes: updatedStudent.notes.trim()
@@ -337,7 +341,7 @@ export default function ProfilePage() {
     router.push('/');
   };
 
-  if (!user) {
+  if (authLoading || !user) {
     return (
       <div className="flex items-center justify-center bg-[var(--background)]">
         <div className="text-center">

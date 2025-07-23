@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { addStudentToSupabase } from '../app/book-lesson/supabaseStudent';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface AuthModalProps {
@@ -9,6 +10,13 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
+  // Student info state for signup step 2
+  const [showStudentStep, setShowStudentStep] = useState(false);
+  const [studentName, setStudentName] = useState('');
+  const [studentAge, setStudentAge] = useState('');
+  const [studentGrade, setStudentGrade] = useState('');
+  const [studentEnglishLevel, setStudentEnglishLevel] = useState('');
+  const [studentNotes, setStudentNotes] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
@@ -19,7 +27,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [preferredLocation, setPreferredLocation] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-  const { signUp, signIn, resetPassword } = useAuth();
+  const { signIn, resetPassword } = useAuth();
 
   if (!isOpen) return null;
 
@@ -166,16 +174,24 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
     try {
       if (isSignUp) {
-        const { error } = await signUp(email, password, {
-          full_name: fullName,
-          full_name_kana: fullNameKana,
-          preferred_location: preferredLocation
+        // Use admin signup API for auto-confirm
+        const signupResponse = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            password,
+            full_name: fullName,
+            full_name_kana: fullNameKana,
+            preferred_location: preferredLocation,
+            autoConfirm: true
+          })
         });
-        if (error) {
-          setMessage(error.message);
+        const signupResult = await signupResponse.json();
+        if (!signupResponse.ok || signupResult.error) {
+          setMessage(signupResult.error || 'アカウント作成に失敗しました');
         } else {
-          // Show confirmation screen instead of error-like message
-          setShowConfirmation(true);
+          setShowStudentStep(true);
         }
       } else {
         const { error } = await signIn(email, password);
@@ -192,6 +208,112 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       setLoading(false);
     }
   };
+
+  // Student info step after signup
+  if (showStudentStep) {
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-[var(--card)] rounded-2xl border border-[var(--border)] p-6 w-full max-w-md shadow-xl">
+          <h2 className="text-2xl font-bold text-[var(--foreground)] mb-6 text-center">生徒情報の登録</h2>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setLoading(true);
+              setMessage('');
+              try {
+                // Get user id by signing in (required for parent_id)
+                const { error: signInError } = await signIn(email, password);
+                if (signInError) {
+                  setMessage('サインインに失敗しました。');
+                  setLoading(false);
+                  return;
+                }
+                // Get user id from localStorage/session (assume signIn sets it in context)
+                const userId = typeof window !== 'undefined'
+                  ? (window as { supabase?: { auth?: { user?: () => { id?: string } } } }).supabase?.auth?.user?.()?.id || null
+                  : null;
+                // Fallback: try to get from supabase client
+                let id = userId;
+                if (!id && typeof window !== 'undefined') {
+                  const supabase = (await import('@supabase/auth-helpers-nextjs')).createClientComponentClient();
+                  const { data: { user } } = await supabase.auth.getUser();
+                  id = user?.id;
+                }
+                if (!id) {
+                  setMessage('ユーザー情報の取得に失敗しました。');
+                  setLoading(false);
+                  return;
+                }
+                await addStudentToSupabase({
+                  userId: id,
+                  name: studentName,
+                  age: studentAge,
+                  grade_level: studentGrade,
+                  english_ability: studentEnglishLevel,
+                  notes: studentNotes
+                });
+                setShowStudentStep(false);
+                setShowConfirmation(true);
+              } catch (err) {
+                setMessage('生徒情報の登録に失敗しました。');
+                console.error('Student info error:', err);
+              } finally {
+                setLoading(false);
+              }
+            }}
+            className="space-y-4"
+          >
+            <div>
+              <label className="block text-sm font-medium text-[var(--foreground)] mb-2">生徒氏名</label>
+              <input type="text" value={studentName} onChange={e => setStudentName(e.target.value)} required className="w-full px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)]" placeholder="山田 太郎" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[var(--foreground)] mb-2">年齢</label>
+              <input type="number" value={studentAge} onChange={e => setStudentAge(e.target.value)} required className="w-full px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)]" placeholder="12" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[var(--foreground)] mb-2">学年</label>
+              <select value={studentGrade} onChange={e => setStudentGrade(e.target.value)} required className="w-full px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)]">
+                <option value="">選択してください</option>
+                <option value="未就学児">未就学児</option>
+                <option value="小学1年">小学1年</option>
+                <option value="小学2年">小学2年</option>
+                <option value="小学3年">小学3年</option>
+                <option value="小学4年">小学4年</option>
+                <option value="小学5年">小学5年</option>
+                <option value="小学6年">小学6年</option>
+                <option value="中学1年">中学1年</option>
+                <option value="中学2年">中学2年</option>
+                <option value="中学3年">中学3年</option>
+                <option value="高校1年">高校1年</option>
+                <option value="高校2年">高校2年</option>
+                <option value="高校3年">高校3年</option>
+                <option value="その他">その他</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[var(--foreground)] mb-2">英語レベル</label>
+              <select value={studentEnglishLevel} onChange={e => setStudentEnglishLevel(e.target.value)} required className="w-full px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)]">
+                <option value="">選択してください</option>
+                <option value="初心者">初心者</option>
+                <option value="初級">初級</option>
+                <option value="中級">中級</option>
+                <option value="上級">上級</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[var(--foreground)] mb-2">備考・特記事項</label>
+              <textarea value={studentNotes} onChange={e => setStudentNotes(e.target.value)} rows={2} className="w-full px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)]" placeholder="好きなもの、苦手なもの、特記事項など" />
+            </div>
+            {message && (
+              <div className="p-3 rounded-xl text-sm bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800">{message}</div>
+            )}
+            <button type="submit" disabled={loading} className="w-full px-6 py-3 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] hover:from-[#2563eb] hover:to-[#3b82f6] text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md">{loading ? '登録中...' : '生徒情報を登録'}</button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -299,7 +421,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             disabled={loading}
             className="w-full px-6 py-3 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] hover:from-[#2563eb] hover:to-[#3b82f6] text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
           >
-            {loading ? '処理中...' : isSignUp ? '登録' : 'ログイン'}
+            {loading ? '処理中...' : isSignUp ? '次へ' : 'ログイン'}
           </button>
         </form>
 
