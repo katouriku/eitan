@@ -252,20 +252,28 @@ export default function BookLessonPage() {
   const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<string | null>(null);
   const [password, setPassword] = useState("");
 
-  // Check for existing bookings to determine if free trial should be offered
+  // Enable free trial UI for first-time users via query param (only if not signed in) or for signed-in users with no bookings
   useEffect(() => {
+    const url = typeof window !== 'undefined' ? new URL(window.location.href) : null;
+    const freeLessonParam = url?.searchParams.get('freelesson');
+    if (!user?.email && freeLessonParam === '1') {
+      // Unsigned-in user with ?freelesson=1
+      setCoupon('freelesson');
+      setCouponConfirmed(true);
+      setIsFreeTrialActive(true);
+      return;
+    }
+    // For signed-in users, check for existing bookings
     const checkExistingBookings = async () => {
       if (!user?.email) return;
-      
       try {
         const response = await fetch(`/api/booking?customer_email=${encodeURIComponent(user.email)}`);
         const data = await response.json();
-        
         if (response.ok && data.bookings && data.bookings.length > 0) {
           // User has existing bookings - no free trial
+          setIsFreeTrialActive(false);
         } else {
-          // If no existing bookings, offer free trial
-          setCoupon("freelesson");
+          setCoupon('freelesson');
           setCouponConfirmed(true);
           setIsFreeTrialActive(true);
         }
@@ -273,8 +281,9 @@ export default function BookLessonPage() {
         console.error('Error checking existing bookings:', error);
       }
     };
-
-    checkExistingBookings();
+    if (user?.email) {
+      checkExistingBookings();
+    }
   }, [user?.email]);
 
   // Load saved payment methods for authenticated users
@@ -895,16 +904,23 @@ export default function BookLessonPage() {
     return (
       <div className="bg-[var(--card)] border border-[var(--border)] p-6 rounded-xl shadow-lg">
         <h3 className="text-lg font-semibold text-[var(--foreground)] mb-4 text-center">予約詳細</h3>
-        
         {/* Price display */}
         <div className="space-y-4 mb-6">
           <div className="text-center">
             <div className="text-sm text-[var(--muted-foreground)] mb-1">合計金額(税込み)</div>
             <div className="text-2xl font-bold text-[#3881ff]">
-              {lessonType ? getDisplayPrice() : "－"}
+              {lessonType ? (
+                isFreeTrialActive ? (
+                  <span className="flex flex-col items-center">
+                    <span className="line-through text-[var(--muted-foreground)] text-base mb-1">{getLessonPrice().toLocaleString()}円</span>
+                    <span className="text-green-500 text-2xl font-bold">無料</span>
+                  </span>
+                ) : (
+                  getDisplayPrice()
+                )
+              ) : "－"}
             </div>
           </div>
-          
           {/* Participant count */}
           <div className="flex justify-between items-center py-2 border-t border-[var(--border)]/30">
             <span className="text-[var(--muted-foreground)] font-medium">参加者数</span>
@@ -912,7 +928,6 @@ export default function BookLessonPage() {
               {lessonType ? `${participants}名` : "－"}
             </span>
           </div>
-          
           {/* Lesson type */}
           <div className="flex justify-between items-center py-2 border-t border-[var(--border)]/30">
             <span className="text-[var(--muted-foreground)] font-medium">レッスン形式</span>
@@ -920,7 +935,6 @@ export default function BookLessonPage() {
               {lessonType === 'online' ? 'オンライン' : lessonType === 'in-person' ? '対面' : '－'}
             </span>
           </div>
-          
           {/* Date */}
           <div className="flex justify-between items-center py-2 border-t border-[var(--border)]/30">
             <span className="text-[var(--muted-foreground)] font-medium">予約日</span>
@@ -928,7 +942,6 @@ export default function BookLessonPage() {
               {selectedDate || "－"}
             </span>
           </div>
-          
           {/* Time */}
           <div className="flex justify-between items-center py-2 border-t border-[var(--border)]/30">
             <span className="text-[var(--muted-foreground)] font-medium">予約時間</span>
@@ -937,7 +950,6 @@ export default function BookLessonPage() {
             </span>
           </div>
         </div>
-        
         {/* Error display */}
         {priceError && lessonType && (
           <div className="text-red-400 text-sm font-bold text-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">

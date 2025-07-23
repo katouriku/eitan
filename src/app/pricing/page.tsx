@@ -74,7 +74,8 @@ export default function PricingPage() {
               </h2>
               
               <div className="text-2xl lg:text-3xl font-bold text-[#3881ff]">
-                {pricing.price}
+                <span className="line-through text-[var(--muted-foreground)] mr-2">{pricing.price}</span>
+                <span className="text-green-500">無料</span>
                 <span className="text-sm text-[var(--muted-foreground)] font-normal"><br />
                   {pricing.unit}
                 </span>

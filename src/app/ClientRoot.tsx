@@ -5,7 +5,6 @@ import { groq } from "next-sanity";
 import { useEffect, useState, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import Cookies from "js-cookie";
 import "./globals.css";
 import { LoadingProvider } from "../contexts/LoadingContext";
 import { ThemeProvider } from "../contexts/ThemeContext";
@@ -16,7 +15,7 @@ import Header from "../components/Header";
 export default function ClientRoot({ children }: { children: React.ReactNode }) {
   // Navigation state
   const [nav, setNav] = useState([
-    { label: "レッスンを予約", href: "/book-lesson" },
+    { label: "レッスンを予約", href: "/book-lesson?freelesson=1" },
     { label: "方法", href: "/method" },
     { label: "料金", href: "/pricing" },
     { label: "私について", href: "/about-me" },
@@ -28,14 +27,6 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
   // Hamburger menu state
   const [menuOpen, setMenuOpen] = useState(false);
 
-  // Free trial eligibility state (no banner, just for button text)
-  const [isEligibleForFreeTrial, setIsEligibleForFreeTrial] = useState(false);
-
-  // Check if user is eligible for free trial
-  useEffect(() => {
-    const hasBookedBefore = Cookies.get("user_has_booked") === "true";
-    setIsEligibleForFreeTrial(!hasBookedBefore);
-  }, []);
 
   // Fetch navigation from Sanity (memoized)
   const fetchNav = useCallback(async () => {
@@ -114,11 +105,11 @@ export default function ClientRoot({ children }: { children: React.ReactNode }) 
                         {homepage.description}
                       </p>
                       <Link
-                        href={isEligibleForFreeTrial ? "/book-lesson?freeTrial=true" : nav[0].href}
+                        href={"/book-lesson?freelesson=1"}
                         className="inline-block px-6 sm:px-8 mt-2 py-3 sm:py-4 rounded-full font-bold text-base sm:text-lg md:text-xl bg-gradient-to-r from-[#3881ff] to-[#5a9eff] text-white shadow-xl hover:from-[#5a9eff] hover:to-[#3881ff] hover:scale-105 transition-all duration-300 border-2 border-[#3881ff]/50 focus:outline-none"
                         style={{textShadow:'0 2px 8px rgba(0,0,0,0.20)', color: 'white'}}
                       >
-                        {isEligibleForFreeTrial ? "無料レッスンを予約" : nav[0].label}
+                        無料レッスンを予約
                       </Link>
                     </div>
                   </div>

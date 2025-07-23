@@ -63,7 +63,7 @@ export default function Header({ homepage, nav, menuOpen, setMenuOpen }: HeaderP
                 href={item.href}
                 className="relative px-4 xl:px-5 py-2.5 rounded-xl font-medium text-sm xl:text-base text-[var(--foreground)] hover:text-[#3881ff] hover:bg-[var(--muted)]/40 transition-all duration-300 group"
               >
-                <span className="relative z-10">{item.label}</span>
+                <span className="relative z-10">{item.label === 'レッスンを予約' ? '無料レッスンを予約' : item.label}</span>
                 <div className="absolute inset-0 bg-gradient-to-r from-[#3881ff]/5 to-[#5a9eff]/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] rounded-full group-hover:w-4/5 transition-all duration-300"></div>
               </Link>
@@ -119,7 +119,7 @@ export default function Header({ homepage, nav, menuOpen, setMenuOpen }: HeaderP
                   className="relative px-4 py-3 rounded-xl font-medium text-[var(--foreground)] hover:text-[#3881ff] hover:bg-[var(--muted)]/40 transition-all duration-300 group"
                   onClick={() => setMenuOpen(false)}
                 >
-                  <span className="relative z-10">{item.label}</span>
+                  <span className="relative z-10">{item.label === 'レッスンを予約' ? '無料レッスンを予約' : item.label}</span>
                   <div className="absolute inset-0 bg-gradient-to-r from-[#3881ff]/10 to-[#5a9eff]/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </Link>
               ))}
