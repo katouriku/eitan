@@ -12,6 +12,8 @@ interface AuthModalProps {
 export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   // Student info state for signup step 2
   const [showStudentStep, setShowStudentStep] = useState(false);
+  // Toggle for 'student is the same as the booker'
+  const [studentIsBooker, setStudentIsBooker] = useState(false);
   const [studentName, setStudentName] = useState('');
   const [studentAge, setStudentAge] = useState('');
   const [studentGrade, setStudentGrade] = useState('');
@@ -159,7 +161,17 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         if (!signupResponse.ok || signupResult.error) {
           setMessage(signupResult.error ? translateErrorMessage({ message: signupResult.error }) : 'アカウント作成に失敗しました');
         } else {
-          setShowStudentStep(true);
+          if (studentIsBooker) {
+            // If student is the booker, sign in and close modal
+            const { error } = await signIn(email, password);
+            if (error) {
+              setMessage(translateErrorMessage(error));
+            } else {
+              onClose();
+            }
+          } else {
+            setShowStudentStep(true);
+          }
         }
       } else {
         const { error } = await signIn(email, password);
@@ -376,6 +388,20 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   placeholder="例: 東京都渋谷区渋谷1-1-1 または オンライン"
                 />
               </div>
+
+              {/* Student is booker toggle */}
+              <div className="flex items-center mt-2 mb-2">
+                <input
+                  id="studentIsBooker"
+                  type="checkbox"
+                  checked={studentIsBooker}
+                  onChange={e => setStudentIsBooker(e.target.checked)}
+                  className="mr-2 w-4 h-4 accent-[#3881ff]"
+                />
+                <label htmlFor="studentIsBooker" className="text-sm text-[var(--foreground)] select-none cursor-pointer">
+                  生徒は申込者本人です
+                </label>
+              </div>
             </>
           )}
 
@@ -390,7 +416,13 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             disabled={loading}
             className="w-full px-6 py-3 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] hover:from-[#2563eb] hover:to-[#3b82f6] text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md"
           >
-            {loading ? '処理中...' : isSignUp ? '次へ' : 'ログイン'}
+            {loading
+              ? '処理中...'
+              : isSignUp
+                ? studentIsBooker
+                  ? '登録'
+                  : '次へ'
+                : 'ログイン'}
           </button>
         </form>
 
