@@ -18,7 +18,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [studentEnglishLevel, setStudentEnglishLevel] = useState('');
   const [studentNotes, setStudentNotes] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
-  const [showConfirmation, setShowConfirmation] = useState(false);
+  // const [showConfirmation, setShowConfirmation] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,6 +27,22 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [preferredLocation, setPreferredLocation] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+
+  // Map known error messages to Japanese
+  function translateErrorMessage(error: { message?: string } | null | undefined): string {
+    if (!error || !error.message) return 'エラーが発生しました。';
+    const msg = error.message;
+    if (msg.includes('Invalid login credentials')) return 'メールアドレスまたはパスワードが正しくありません。';
+    if (msg.includes('User already registered')) return 'このメールアドレスは既に登録されています。';
+    if (msg.includes('Email not confirmed')) return 'メールアドレスの確認が完了していません。メールをご確認ください。';
+    if (msg.includes('Password should be at least')) return 'パスワードは6文字以上で入力してください。';
+    if (msg.includes('Invalid email')) return 'メールアドレスの形式が正しくありません。';
+    if (msg.includes('User not found')) return 'ユーザーが見つかりません。';
+    if (msg.includes('Network error')) return 'ネットワークエラーが発生しました。しばらくしてから再度お試しください。';
+    if (msg.includes('rate limit')) return 'リクエストが多すぎます。しばらくしてから再度お試しください。';
+    // Add more mappings as needed
+    return msg;
+  }
   const { signIn, resetPassword } = useAuth();
 
   if (!isOpen) return null;
@@ -56,7 +72,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             
             const { error } = await resetPassword(email);
             if (error) {
-              setMessage(error.message);
+              setMessage(translateErrorMessage(error));
             } else {
               setMessage('パスワードリセットメールを送信しました。メールをご確認ください。');
             }
@@ -117,55 +133,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     );
   }
 
-  // Show confirmation screen after successful sign up
-  if (showConfirmation) {
-    return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-[var(--card)] rounded-2xl border border-[var(--border)] p-6 w-full max-w-md shadow-xl">
-          <div className="text-center">
-            <div className="mb-6">
-              <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 7.89a1 1 0 001.42 0L21 7"></path>
-                </svg>
-              </div>
-              <h2 className="text-2xl font-bold text-[var(--foreground)] mb-2">
-                確認メールを送信しました
-              </h2>
-              <p className="text-[var(--muted-foreground)] mb-4">
-                <span className="font-medium">{email}</span> 宛に確認メールを送信しました。
-              </p>
-              <p className="text-sm text-[var(--muted-foreground)]">
-                メール内のリンクをクリックしてアカウントを有効化してください。
-                その後、こちらからログインできます。
-              </p>
-            </div>
-            
-            <div className="space-y-3">
-              <button
-                onClick={() => {
-                  setShowConfirmation(false);
-                  setIsSignUp(false);
-                  setEmail('');
-                  setPassword('');
-                  setMessage('');
-                }}
-                className="w-full px-6 py-3 bg-gradient-to-r from-[#3881ff] to-[#5a9eff] hover:from-[#2563eb] hover:to-[#3b82f6] text-white font-semibold rounded-xl transition-all duration-300"
-              >
-                ログイン画面へ
-              </button>
-              <button
-                onClick={onClose}
-                className="w-full px-6 py-3 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors"
-              >
-                閉じる
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,14 +157,14 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         });
         const signupResult = await signupResponse.json();
         if (!signupResponse.ok || signupResult.error) {
-          setMessage(signupResult.error || 'アカウント作成に失敗しました');
+          setMessage(signupResult.error ? translateErrorMessage({ message: signupResult.error }) : 'アカウント作成に失敗しました');
         } else {
           setShowStudentStep(true);
         }
       } else {
         const { error } = await signIn(email, password);
         if (error) {
-          setMessage(error.message);
+          setMessage(translateErrorMessage(error));
         } else {
           onClose();
         }
@@ -253,7 +221,8 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   notes: studentNotes
                 });
                 setShowStudentStep(false);
-                setShowConfirmation(true);
+                onClose();
+                // Optionally, show a toast or message for success here
               } catch (err) {
                 setMessage('生徒情報の登録に失敗しました。');
                 console.error('Student info error:', err);
@@ -265,15 +234,15 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           >
             <div>
               <label className="block text-sm font-medium text-[var(--foreground)] mb-2">生徒氏名</label>
-              <input type="text" value={studentName} onChange={e => setStudentName(e.target.value)} required className="w-full px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)]" placeholder="山田 太郎" />
+          <input type="text" value={studentName} onChange={e => { setStudentName(e.target.value); setMessage(''); }} required className="w-full px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)]" placeholder="山田 太郎" />
             </div>
             <div>
               <label className="block text-sm font-medium text-[var(--foreground)] mb-2">年齢</label>
-              <input type="number" value={studentAge} onChange={e => setStudentAge(e.target.value)} required className="w-full px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)]" placeholder="12" />
+          <input type="number" value={studentAge} onChange={e => { setStudentAge(e.target.value); setMessage(''); }} required className="w-full px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)]" placeholder="12" />
             </div>
             <div>
               <label className="block text-sm font-medium text-[var(--foreground)] mb-2">学年</label>
-              <select value={studentGrade} onChange={e => setStudentGrade(e.target.value)} required className="w-full px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)]">
+          <select value={studentGrade} onChange={e => { setStudentGrade(e.target.value); setMessage(''); }} required className="w-full px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)]">
                 <option value="">選択してください</option>
                 <option value="未就学児">未就学児</option>
                 <option value="小学1年">小学1年</option>
@@ -293,7 +262,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             </div>
             <div>
               <label className="block text-sm font-medium text-[var(--foreground)] mb-2">英語レベル</label>
-              <select value={studentEnglishLevel} onChange={e => setStudentEnglishLevel(e.target.value)} required className="w-full px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)]">
+          <select value={studentEnglishLevel} onChange={e => { setStudentEnglishLevel(e.target.value); setMessage(''); }} required className="w-full px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)]">
                 <option value="">選択してください</option>
                 <option value="初心者">初心者</option>
                 <option value="初級">初級</option>
@@ -303,7 +272,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
             </div>
             <div>
               <label className="block text-sm font-medium text-[var(--foreground)] mb-2">備考・特記事項</label>
-              <textarea value={studentNotes} onChange={e => setStudentNotes(e.target.value)} rows={2} className="w-full px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)]" placeholder="好きなもの、苦手なもの、特記事項など" />
+          <textarea value={studentNotes} onChange={e => { setStudentNotes(e.target.value); setMessage(''); }} rows={2} className="w-full px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)]" placeholder="好きなもの、苦手なもの、特記事項など" />
             </div>
             {message && (
               <div className="p-3 rounded-xl text-sm bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800">{message}</div>
@@ -340,7 +309,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               id="email"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => { setEmail(e.target.value); setMessage(''); }}
               required
               className="w-full px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
               placeholder="name@gmail.com"
@@ -355,7 +324,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               id="password"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => { setPassword(e.target.value); setMessage(''); }}
               required
               minLength={6}
               className="w-full px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
@@ -373,7 +342,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   id="fullName"
                   type="text"
                   value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
+                  onChange={(e) => { setFullName(e.target.value); setMessage(''); }}
                   required
                   className="w-full px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
                   placeholder="山田 太郎"
@@ -388,7 +357,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   id="fullNameKana"
                   type="text"
                   value={fullNameKana}
-                  onChange={(e) => setFullNameKana(e.target.value)}
+                  onChange={(e) => { setFullNameKana(e.target.value); setMessage(''); }}
                   className="w-full px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
                   placeholder="やまだ たろう"
                 />
@@ -402,7 +371,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   id="preferredLocation"
                   type="text"
                   value={preferredLocation}
-                  onChange={(e) => setPreferredLocation(e.target.value)}
+                  onChange={(e) => { setPreferredLocation(e.target.value); setMessage(''); }}
                   className="w-full px-4 py-3 rounded-xl bg-[var(--input)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-[#3881ff] focus:border-[#3881ff] transition-all duration-300"
                   placeholder="例: 東京都渋谷区渋谷1-1-1 または オンライン"
                 />
@@ -429,7 +398,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           {!isSignUp && (
             <button
               type="button"
-              onClick={() => setShowPasswordReset(true)}
+              onClick={() => { setShowPasswordReset(true); setMessage(''); }}
               className="text-sm text-[var(--muted-foreground)] hover:text-[#3881ff] transition-colors"
             >
               パスワードを忘れた方はこちら
@@ -439,7 +408,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           <div>
             <button
               type="button"
-              onClick={() => setIsSignUp(!isSignUp)}
+              onClick={() => { setIsSignUp(!isSignUp); setMessage(''); }}
               className="text-sm text-[#3881ff] hover:text-[#5a9eff] transition-colors"
             >
               {isSignUp ? 'ログイン' : '登録'}

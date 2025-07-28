@@ -39,12 +39,27 @@ export default function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [students, setStudents] = useState<Student[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'students' | 'lessons'>('profile');
+  // Persist activeTab in localStorage
+  const tabKey = 'profilePageActiveTab';
+  const [activeTab, setActiveTabState] = useState<'profile' | 'security' | 'students' | 'lessons'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = window.localStorage.getItem(tabKey);
+      if (saved === 'profile' || saved === 'security' || saved === 'students' || saved === 'lessons') {
+        return saved;
+      }
+    }
+    return 'profile';
+  });
+  const setActiveTab = (tab: 'profile' | 'security' | 'students' | 'lessons') => {
+    setActiveTabState(tab);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(tabKey, tab);
+    }
+  };
   const [newStudent, setNewStudent] = useState<Student>({
     name: '',
     age: '',
     grade_level: '',
-
     english_ability: '',
     notes: ''
   });
