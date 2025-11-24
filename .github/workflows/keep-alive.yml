@@ -14,7 +14,7 @@ jobs:
       - name: Ping Supabase Heartbeat Table
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
         run: |
           # The '-f' flag ensures the Action fails if the HTTP status is an error (4xx/5xx)
           curl -f -X GET "$SUPABASE_URL/rest/v1/_heartbeat?select=id" \
