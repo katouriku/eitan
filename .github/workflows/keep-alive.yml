@@ -1,0 +1,23 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # Runs at 00:00 UTC every Monday and Thursday
+    # (Checking twice a week is safer to prevent pauses)
+    - cron: '0 0 * * 1,4'
+  workflow_dispatch: # Adds a "Run workflow" button to GitHub for manual testing
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase Heartbeat Table
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          # The '-f' flag ensures the Action fails if the HTTP status is an error (4xx/5xx)
+          curl -f -X GET "$SUPABASE_URL/rest/v1/_heartbeat?select=id" \
+          -H "apikey: $SUPABASE_KEY" \
+          -H "Authorization: Bearer $SUPABASE_KEY" \
+          -H "Range: 0-0"
