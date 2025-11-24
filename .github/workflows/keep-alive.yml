@@ -18,6 +18,6 @@ jobs:
         run: |
           # The '-f' flag ensures the Action fails if the HTTP status is an error (4xx/5xx)
           curl -f -X GET "$SUPABASE_URL/rest/v1/_heartbeat?select=id" \
-          -H "apikey: $SUPABASE_KEY" \
-          -H "Authorization: Bearer $SUPABASE_KEY" \
+          -H "apikey: $NEXT_PUBLIC_SUPABASE_ANON_KEY" \
+          -H "Authorization: Bearer $NEXT_PUBLIC_SUPABASE_ANON_KEY" \
           -H "Range: 0-0"
