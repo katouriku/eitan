@@ -3,7 +3,7 @@ name: Keep Supabase Alive
 on:
   schedule:
     # Runs at 00:00 UTC every Monday and Thursday
-    # (Checking twice a week is safer to prevent pauses)
+    # (Checking twice a week is safer to prevent pauses.)
     - cron: '0 0 * * 1,4'
   workflow_dispatch: # Adds a "Run workflow" button to GitHub for manual testing
 
